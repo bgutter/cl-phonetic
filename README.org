@@ -1,0 +1,161 @@
+#+TITLE: cl-phonetic
+
+A phonetic pattern matching library for Common Lisp.
+
+This library is intended to replace the [[https://github.com/bgutter/sylvia][Sylvia library]] for Python.
+
+* Features
+
+This library is in-progress, and each feature is at varying degrees of readiness.
+
+| Status Symbol | Meaning                                                                                      |
+|---------------+----------------------------------------------------------------------------------------------|
+| 💡           | Planning stage.                                                                              |
+| ⛏           | Initial groundwork started. Uusually just means that it's already done in Sylvia's codebase. |
+| 🚧           | Currently under active implementation.                                                       |
+| ✅           | Done                                                                                         |
+
+** 🚧 Phonetic Pattern Matching via Regular Expressions
+
+cl-phonetic can search a phonetic dictionary for words whose pronunciations match a phonetic regular expression. These regex are similar to Perl in syntax, but, have nothing to do with ASCII or Unicode character sets. Instead, the alphabet of the language tested by these regex consists only of phonemes.
+
+In a phonetic regex, phoneme literals are defined according to the ARPABET, as it was used by [[http://www.speech.cs.cmu.edu/cgi-bin/cmudict][=cmudict=]]. A full list of ARPABET phoneme encodings from that link is reproduced here.
+
+| Phoneme | Example | Translation |
+|---------+---------+-------------|
+| AA      | odd     | AA D        |
+| AE      | at      | AE T        |
+| AH      | hut     | HH AH T     |
+| AO      | ought   | AO T        |
+| AW      | cow     | K AW        |
+| AY      | hide    | HH AY D     |
+| B       | be      | B IY        |
+| CH      | cheese  | CH IY Z     |
+| D       | dee     | D IY        |
+| DH      | thee    | DH IY       |
+| EH      | Ed      | EH D        |
+| ER      | hurt    | HH ER T     |
+| EY      | ate     | EY T        |
+| F       | fee     | F IY        |
+| G       | green   | G R IY N    |
+| HH      | he      | HH IY       |
+| IH      | it      | IH T        |
+| IY      | eat     | IY T        |
+| JH      | gee     | JH IY       |
+| K       | key     | K IY        |
+| L       | lee     | L IY        |
+| M       | me      | M IY        |
+| N       | knee    | N IY        |
+| NG      | ping    | P IH NG     |
+| OW      | oat     | OW T        |
+| OY      | toy     | T OY        |
+| P       | pee     | P IY        |
+| R       | read    | R IY D      |
+| S       | sea     | S IY        |
+| SH      | she     | SH IY       |
+| T       | tea     | T IY        |
+| TH      | theta   | TH EY T AH  |
+| UH      | hood    | HH UH D     |
+| UW      | two     | T UW        |
+| V       | vee     | V IY        |
+| W       | we      | W IY        |
+| Y       | yield   | Y IY L D    |
+| Z       | zee     | Z IY        |
+| ZH      | seizure | S IY ZH ER  |
+
+When they occur in n a phonetic regex, these phoneme literals should be space delimited. For example, =K AE T= is a phonetic regex which matches the English word "cat".
+
+Since these regex are Perl-like, =K AE .*= is also a valid phonetic regex, and matches words like "cat", "Canberra", "cathode", etc.
+
+=cl-phonetic= further extends Perl syntax by introducing a new facility for defining classes and sequences of phonemes. To start;
+- =@= matches any single consonant phoneme
+- =#= matches any single vowel phoneme
+- =%= matches any single syllable
+
+Both the =#= and =@= class symbols may optionally accept arguments which further constrain matches. These arguments consist of comma delimited characters within angle brackets. For example, =@<v,,f>= which matches only voiced, fricative consonants. 
+
+You need only supply as many arguments as desired, and can leave fields empty as needed. For example, the following class definitions are all valid, and all compile to the same phoneme sets; =@=, =@<>=, =@<,>=, and =@<,,>=.
+
+For consonant classes (the =@<,,>= pattern), up to three arguments can be specified;
+- First, a single character which can restrict matches based on voicing.
+- Second, sequence of characters which restricts matches based on place of articulation.
+- Third, a sequence of characters which restricts matches based on method of articulation.
+
+When multiple characters are supplied for a single parameter, the resulting matches are a union over those characters. That is, there's an implicit =OR= over your arguments.
+
+Consonant voicing arguments:
+| Character | Restricts Matches To |
+|-----------+----------------------|
+| v         | Voiced               |
+| u         | Unvoiced             |
+
+Consonant place-of-articulation arguments
+| Character | Restricts Matches To |
+|-----------+----------------------|
+| a         | Alveolar             |
+| b         | Bilabial             |
+| d         | Dental               |
+| g         | Glottal              |
+| l         | Labio-dental         |
+| p         | Post-alveolar        |
+| t         | Palatal              |
+| v         | Velar                |
+
+Consonant method-of-articulation arguments
+| Character | Restricts Matches To |
+|-----------+----------------------|
+| a         | Affricate            |
+| f         | Fricative            |
+| l         | Lateral              |
+| n         | Nasal                |
+| p         | Plosive              |
+| x         | Approximant          |
+
+Examples:
+| Phoneme Class Definition | What It Matches                                        |
+|--------------------------+--------------------------------------------------------|
+| @                        | All consonants                                         |
+| @<,,>                    | All consonants                                         |
+| @<v>                     | All voiced consonants                                  |
+| @<v,,>                   | All voiced consonants                                  |
+| @<,,p>                   | All plosive consonants                                 |
+| @<v,,p>                  | All consonants which are both voiced and plosive       |
+| @<,bd,>                  | All consonants which are either bilabial or dental     |
+| @<,,fa>                  | All consonants which are either fricative or affricate |
+| @<u,bd,fa>               | All consonants which are unvoiced, and also either bilabial or dental, and also either fricative or affricate |
+
+For vowel classes, three parameters may also be specified;
+- First, height
+- Second, backness
+- Third, roundedness
+
+This is still in progress.
+
+** ⛏ Phonetic Metapatterns via Regular Expression Generators
+
+Generating phonetic regex given a word and a meta-pattern, such as rhyme, perfect rhyme, assonance, connosance, alliteration, etc.
+
+Examples:
+perfect_rhyme( cat ) -> \s* AE T          { rat bat ... }
+near_rhyme( cat )    -> \s* AE \c* T \c*  { rat rats bat bats fact facts blast blasts ... }
+assonance( cat )     -> \c* AE \c*        { rat rats map saps claps clasp tab ... }
+
+This is still in progress.
+
+** ⛏ Pronunciation Inferencing
+
+Character sequence to phoneme sequence mapping.
+
+This is still in progress.
+
+May port general algorithm from the Sylvia Python package. May try something else.
+
+** 💡 Corpus Statistics
+
+Calculating phoneme N-grams, at the bare minimum. Basically a quick-path for processing large corpus.
+
+* User Manual
+
+TODO
+
+
