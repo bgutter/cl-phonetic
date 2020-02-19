@@ -131,7 +131,7 @@ For vowel classes (the =@<,,>= pattern), three parameters may also be specified;
 
 This is still in progress.
 
-** ⛏ Phonetic Metapatterns via Regular Expression Generators
+** 🚧 Phonetic Metapatterns via Regular Expression Generators
 
 Given a word and a meta-pattern, cl-phonetic can produce a phonetic regex implementing that pattern over the word. This includes things like rhyme, perfect rhyme, assonance, consonance, alliteration, etc.
 
@@ -145,7 +145,7 @@ Examples of Sylvia's current behavior:
 
 One goal of cl-phonetic is to redefine "rhyme" and "near rhyme" to make better use of the properties of phonemes, potentially yielding more sensible results. For example, we could allow only unvoiced plosives between phonemes in =:near-rhyme=, rather than any consonant.
 
-🚨 This is still in progress; there's no committed code in cl-phonetic for it yet. But, the rhyme patterns are implemented/working in sylvia. See =getRhymeRegex()= in that repo to learn more.
+This is still in progress.
 
 ** ⛏ Pronunciation Inferencing
 
