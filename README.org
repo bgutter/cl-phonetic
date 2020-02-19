@@ -8,18 +8,18 @@ This library is intended to replace the [[https://github.com/bgutter/sylvia][Syl
 
 This library is in-progress, and each feature is at varying degrees of readiness.
 
-| Status Symbol | Meaning                                                                                      |
-|---------------+----------------------------------------------------------------------------------------------|
-| 💡           | Planning stage.                                                                              |
-| ⛏           | Initial groundwork started. Uusually just means that it's already done in Sylvia's codebase. |
-| 🚧           | Currently under active implementation.                                                       |
-| ✅           | Done                                                                                         |
+| Status Symbol | Meaning                                                                                           |
+|---------------+---------------------------------------------------------------------------------------------------|
+| 💡           | Planning stage.                                                                                   |
+| ⛏           | Initial groundwork started. Usually, this just means that it's already done in Sylvia's codebase. |
+| 🚧           | Currently under active implementation.                                                            |
+| ✅           | Done                                                                                              |
 
 ** 🚧 Phonetic Pattern Matching via Regular Expressions
 
 cl-phonetic can search a phonetic dictionary for words whose pronunciations match a phonetic regular expression. These regex are similar to Perl in syntax, but, have nothing to do with ASCII or Unicode character sets. Instead, the alphabet of the language tested by these regex consists only of phonemes.
 
-In a phonetic regex, phoneme literals are defined according to the ARPABET, as it was used by [[http://www.speech.cs.cmu.edu/cgi-bin/cmudict][=cmudict=]]. A full list of ARPABET phoneme encodings from that link is reproduced here.
+In a phonetic regex, phoneme literals are defined according to the ARPABET, as it was used by [[http://www.speech.cs.cmu.edu/cgi-bin/cmudict][cmudict]]. A full list of ARPABET phoneme encodings from that link is reproduced here.
 
 | Phoneme | Example | Translation  |
 |---------+---------+--------------|
@@ -63,7 +63,7 @@ In a phonetic regex, phoneme literals are defined according to the ARPABET, as i
 | =Z=     | zee     | =Z IY=       |
 | =ZH=    | seizure | =S IY ZH ER= |
 
-When they occur in n a phonetic regex, these phoneme literals should be space delimited. For example, =K AE T= is a phonetic regex which matches the English word "cat".
+When they occur in a phonetic regex, these phoneme literals should be space delimited. For example, =K AE T= is a phonetic regex which matches the English word "cat".
 
 Since these regex are Perl-like, =K AE .*= is also a valid phonetic regex, and matches words like "cat", "Canberra", "cathode", etc.
 
@@ -72,7 +72,7 @@ Since these regex are Perl-like, =K AE .*= is also a valid phonetic regex, and m
 - =@= matches any single vowel phoneme
 - =%= matches any single syllable
 
-Both the =#= and =@= class symbols may optionally accept arguments which further constrain matches. These arguments consist of comma delimited characters within angle brackets. For example, =#<v,,f>= which matches only voiced, fricative consonants. 
+Both the =#= and =@= class symbols may optionally accept arguments which further constrain matches. These arguments consist of comma delimited characters within angle brackets. For example, =#<v,,f>= which matches only voiced, fricative consonants.
 
 You need only supply as many arguments as desired, and can leave fields empty as needed. For example, the following class definitions are all valid, and all compile to the same phoneme sets; =@=, =@<>=, =@<,>=, and =@<,,>=.
 
