@@ -68,15 +68,15 @@ When they occur in n a phonetic regex, these phoneme literals should be space de
 Since these regex are Perl-like, =K AE .*= is also a valid phonetic regex, and matches words like "cat", "Canberra", "cathode", etc.
 
 =cl-phonetic= further extends Perl syntax by introducing a new facility for defining classes and sequences of phonemes. To start;
-- =@= matches any single consonant phoneme
-- =#= matches any single vowel phoneme
+- =#= matches any single consonant phoneme
+- =@= matches any single vowel phoneme
 - =%= matches any single syllable
 
-Both the =#= and =@= class symbols may optionally accept arguments which further constrain matches. These arguments consist of comma delimited characters within angle brackets. For example, =@<v,,f>= which matches only voiced, fricative consonants. 
+Both the =#= and =@= class symbols may optionally accept arguments which further constrain matches. These arguments consist of comma delimited characters within angle brackets. For example, =#<v,,f>= which matches only voiced, fricative consonants. 
 
 You need only supply as many arguments as desired, and can leave fields empty as needed. For example, the following class definitions are all valid, and all compile to the same phoneme sets; =@=, =@<>=, =@<,>=, and =@<,,>=.
 
-For consonant classes (the =@<,,>= pattern), up to three arguments can be specified;
+For consonant classes (the =#<,,>= pattern), up to three arguments can be specified;
 - First, a single character which can restrict matches based on voicing.
 - Second, sequence of characters which restricts matches based on place of articulation.
 - Third, a sequence of characters which restricts matches based on method of articulation.
@@ -114,17 +114,17 @@ Consonant method-of-articulation arguments
 Examples:
 | Phoneme Class Definition | What It Matches                                        |
 |--------------------------+--------------------------------------------------------|
-| @                        | All consonants                                         |
-| @<,,>                    | All consonants                                         |
-| @<v>                     | All voiced consonants                                  |
-| @<v,,>                   | All voiced consonants                                  |
-| @<,,p>                   | All plosive consonants                                 |
-| @<v,,p>                  | All consonants which are both voiced and plosive       |
-| @<,bd,>                  | All consonants which are either bilabial or dental     |
-| @<,,fa>                  | All consonants which are either fricative or affricate |
-| @<u,bd,fa>               | All consonants which are unvoiced, and also either bilabial or dental, and also either fricative or affricate |
+| #                        | All consonants                                         |
+| #<,,>                    | All consonants                                         |
+| #<v>                     | All voiced consonants                                  |
+| #<v,,>                   | All voiced consonants                                  |
+| #<,,p>                   | All plosive consonants                                 |
+| #<v,,p>                  | All consonants which are both voiced and plosive       |
+| #<,bd,>                  | All consonants which are either bilabial or dental     |
+| #<,,fa>                  | All consonants which are either fricative or affricate |
+| #<u,bd,fa>               | All consonants which are unvoiced, and also either bilabial or dental, and also either fricative or affricate |
 
-For vowel classes, three parameters may also be specified;
+For vowel classes (the =@<,,>= pattern), three parameters may also be specified;
 - First, height
 - Second, backness
 - Third, roundedness
@@ -133,14 +133,19 @@ This is still in progress.
 
 ** ⛏ Phonetic Metapatterns via Regular Expression Generators
 
-Generating phonetic regex given a word and a meta-pattern, such as rhyme, perfect rhyme, assonance, connosance, alliteration, etc.
+Given a word and a meta-pattern, cl-phonetic can produce a phonetic regex implementing that pattern over the word. This includes things like rhyme, perfect rhyme, assonance, consonance, alliteration, etc.
 
-Examples:
-perfect_rhyme( cat ) -> \s* AE T          { rat bat ... }
-near_rhyme( cat )    -> \s* AE \c* T \c*  { rat rats bat bats fact facts blast blasts ... }
-assonance( cat )     -> \c* AE \c*        { rat rats map saps claps clasp tab ... }
+Examples of Sylvia's current behavior:
+| Metapattern    | Input Word | Input Pronunciation | Output Regex   | Example Matching Words                      |
+|----------------+------------+---------------------+----------------+---------------------------------------------|
+| :perfect-rhyme | Clap       | C L AE P            | .* AE P        | Rap, Milsap, Trap, Nap                      |
+| :near-rhyme    | Clap       | C L AE P            | .* AE #* P #*  | Rap, Raps, Clasp, Milsap, Synapse, Trapped  |
+| :vowel-match   | Clap       | C L AE P            | .* AE .*       | Rad, Bad, Saturday, Clapper, Clap           |
+| :vowel-match   | Clapper    | C L AE P ER         | .* AE #* ER .* | Dapper, Transfer, Unilateral, Staffordshire |
 
-This is still in progress.
+One goal of cl-phonetic is to redefine "rhyme" and "near rhyme" to make better use of the properties of phonemes, potentially yielding more sensible results. For example, we could allow only unvoiced plosives between phonemes in =:near-rhyme=, rather than any consonant.
+
+🚨 This is still in progress; there's no committed code in cl-phonetic for it yet. But, the rhyme patterns are implemented/working in sylvia. See =getRhymeRegex()= in that repo to learn more.
 
 ** ⛏ Pronunciation Inferencing
 

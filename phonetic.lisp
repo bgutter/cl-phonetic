@@ -200,7 +200,7 @@ either a single value to match, or a list thereof."
     (case (aref expstr 0)
       (#\@ (expand-phoneme-expression/vowels opts))
       (#\# (expand-phoneme-expression/consonants opts))
-      (#\% " #*@#* ")
+      (#\% " (?:#*@#*) ")
       (t (error 'simple-error "Invalid phoneme expression string.")))))
 
 (defun encode-regex/phoneme-expressions (pres)
