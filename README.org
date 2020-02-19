@@ -161,6 +161,23 @@ Calculating phoneme N-grams, at the bare minimum. Basically a quick-path for pro
 
 * User Manual
 
-TODO
+TODO: Flesh this out
+
+#+begin_src lisp
+  (let
+      ;; Open a cmudict-compatible file
+      ((my-dict (from-cmudict "path/to/cmudict")))
+
+    ;; Look up all pronunciations for word
+    (pronounce-word my-dict "creepy") ;; -> #<(K R IY P IY)>
+
+    ;; Find words which match a phonetic regex
+    (find-words my-dict "# AE T") ;; -> '("Bat" "Vat" "Cat" "That" "Sat")
+    (find-words my-dict "#<v,,f> AE T") ;; -> '("Vat" "That")
+
+    ;; Find words which match a phonetic metapattern
+    (find-metapattern my-dict 'perfect-rhyme "Chatter") ;; -> '("Matter" "Blatter" "Clatter")
+    (find-metapattern my-dict 'near-rhyme "Chatter"))    ;; -> '("Matter" "Blatter" "Clatter" "Antler" "Actor" "Adapter")
+#+end_src
 
 

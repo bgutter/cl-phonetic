@@ -223,9 +223,11 @@ either a single value to match, or a list thereof."
 
 (defun encode-regex (pres)
   "Return a fully-encoded version of the given string."
-  (format t "Encoding ~a~%" pres)
-  (remove #\ (encode-regex/phoneme-expressions
-           (encode-regex/phoneme-literals pres))))
+  (concatenate 'string
+               "^"
+               (remove #\ (encode-regex/phoneme-expressions
+                           (encode-regex/phoneme-literals pres)))
+               "$"))
 
 ;; Pronunciations
 
@@ -256,6 +258,61 @@ either a single value to match, or a list thereof."
                                                  (get-phoneme-by-name phoneme-str)
                                                  (and stress-str (parse-integer stress-str)))))
                               phoneme-strings)))
+
+;; Regex Generation
+
+(defun insert (sequence element idx)
+  "Insert an element `element' into `sequence' at index `idx'."
+  (append (subseq sequence 0 idx)
+          (list element)
+          (subseq sequence idx)))
+
+(defun seqjoin (result-type sequence delimiter)
+  "Insert delimiter between every element in sequence."
+  (let
+      ((alternator 1))
+    (flet
+        ((merge-closure (elt-left elt-right)
+           (declare (ignorable elt-left elt-right))
+           (> (setq alternator (* alternator -1)) 0)))
+      (merge result-type
+             sequence
+             (make-list (- (length sequence) 1) :initial-element delimiter)
+             #'merge-closure))))
+
+(defun generate-regex/near-rhyme (phonemes)
+  "Simple rhyme metapattern. This is currently defined to mean that every phoneme after
+the first vowel phoneme matches, but with extra consonants interspersed."
+  (let*
+      ((first-vowel-pos (position-if (lambda (phoneme)
+                                     (eq (phoneme-type phoneme) :vowel))
+                                   phonemes))
+       (first-vowel-to-end (subseq phonemes first-vowel-pos))
+       (representations (mapcar 'phoneme-representation first-vowel-to-end))
+       (consonants-added (seqjoin 'list representations " #* ")))
+    (apply 'concatenate 'string `(".* " ,@consonants-added " #*"))))
+
+(defun generate-regex/perfect-rhyme (phonemes)
+  "Exact rhyme metapattern. This is defined to mean that every phoneme after the first
+vowel phoneme matches exactly."
+  (let*
+      ((first-vowel-pos (position-if (lambda (phoneme)
+                                     (eq (phoneme-type phoneme) :vowel))
+                                   phonemes))
+       (first-vowel-to-end (subseq phonemes first-vowel-pos))
+       (representations (mapcar 'phoneme-representation first-vowel-to-end))
+       (spaces-added (seqjoin 'list representations " ")))
+    (apply 'concatenate 'string `(".* " ,@spaces-added))))
+
+(defun generate-regex (metapattern pronunciation)
+  "Return an unencoded phonetic regex which implements `metapattern' over
+`pronunciation'."
+  (let*
+      ((phonemes-stresses (phoneme-stress-alist pronunciation))
+       (phonemes          (mapcar #'car phonemes-stresses)))
+    (case metapattern
+      (perfect-rhyme (generate-regex/perfect-rhyme phonemes))
+      (near-rhyme    (generate-regex/near-rhyme phonemes)))))
 
 ;; Dictionary Processing
 
@@ -350,3 +407,10 @@ things and save it."
                  (words dict)))
     results))
 
+(defmethod find-metapattern ((dict phonetic-dictionary) metapattern word)
+  "Find words in `dict' which satisfy an internally generated regular expression implementing the
+provided `metapattern' over `word'."
+  (let*
+      ((first-pronunciation (first (pronounce-word dict word)))
+       (regex (generate-regex metapattern first-pronunciation)))
+    (find-words dict regex)))
