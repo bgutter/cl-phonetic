@@ -21,47 +21,47 @@ cl-phonetic can search a phonetic dictionary for words whose pronunciations matc
 
 In a phonetic regex, phoneme literals are defined according to the ARPABET, as it was used by [[http://www.speech.cs.cmu.edu/cgi-bin/cmudict][=cmudict=]]. A full list of ARPABET phoneme encodings from that link is reproduced here.
 
-| Phoneme | Example | Translation |
-|---------+---------+-------------|
-| AA      | odd     | AA D        |
-| AE      | at      | AE T        |
-| AH      | hut     | HH AH T     |
-| AO      | ought   | AO T        |
-| AW      | cow     | K AW        |
-| AY      | hide    | HH AY D     |
-| B       | be      | B IY        |
-| CH      | cheese  | CH IY Z     |
-| D       | dee     | D IY        |
-| DH      | thee    | DH IY       |
-| EH      | Ed      | EH D        |
-| ER      | hurt    | HH ER T     |
-| EY      | ate     | EY T        |
-| F       | fee     | F IY        |
-| G       | green   | G R IY N    |
-| HH      | he      | HH IY       |
-| IH      | it      | IH T        |
-| IY      | eat     | IY T        |
-| JH      | gee     | JH IY       |
-| K       | key     | K IY        |
-| L       | lee     | L IY        |
-| M       | me      | M IY        |
-| N       | knee    | N IY        |
-| NG      | ping    | P IH NG     |
-| OW      | oat     | OW T        |
-| OY      | toy     | T OY        |
-| P       | pee     | P IY        |
-| R       | read    | R IY D      |
-| S       | sea     | S IY        |
-| SH      | she     | SH IY       |
-| T       | tea     | T IY        |
-| TH      | theta   | TH EY T AH  |
-| UH      | hood    | HH UH D     |
-| UW      | two     | T UW        |
-| V       | vee     | V IY        |
-| W       | we      | W IY        |
-| Y       | yield   | Y IY L D    |
-| Z       | zee     | Z IY        |
-| ZH      | seizure | S IY ZH ER  |
+| Phoneme | Example | Translation  |
+|---------+---------+--------------|
+| =AA=    | odd     | =AA D=       |
+| =AE=    | at      | =AE T=       |
+| =AH=    | hut     | =HH AH T=    |
+| =AO=    | ought   | =AO T=       |
+| =AW=    | cow     | =K AW=       |
+| =AY=    | hide    | =HH AY D=    |
+| =B=     | be      | =B IY=       |
+| =CH=    | cheese  | =CH IY Z=    |
+| =D=     | dee     | =D IY=       |
+| =DH=    | thee    | =DH IY=      |
+| =EH=    | Ed      | =EH D=       |
+| =ER=    | hurt    | =HH ER T=    |
+| =EY=    | ate     | =EY T=       |
+| =F=     | fee     | =F IY=       |
+| =G=     | green   | =G R IY N=   |
+| =HH=    | he      | =HH IY=      |
+| =IH=    | it      | =IH T=       |
+| =IY=    | eat     | =IY T=       |
+| =JH=    | gee     | =JH IY=      |
+| =K=     | key     | =K IY=       |
+| =L=     | lee     | =L IY=       |
+| =M=     | me      | =M IY=       |
+| =N=     | knee    | =N IY=       |
+| =NG=    | ping    | =P IH NG=    |
+| =OW=    | oat     | =OW T=       |
+| =OY=    | toy     | =T OY=       |
+| =P=     | pee     | =P IY=       |
+| =R=     | read    | =R IY D=     |
+| =S=     | sea     | =S IY=       |
+| =SH=    | she     | =SH IY=      |
+| =T=     | tea     | =T IY=       |
+| =TH=    | theta   | =TH EY T AH= |
+| =UH=    | hood    | =HH UH D=    |
+| =UW=    | two     | =T UW=       |
+| =V=     | vee     | =V IY=       |
+| =W=     | we      | =W IY=       |
+| =Y=     | yield   | =Y IY L D=   |
+| =Z=     | zee     | =Z IY=       |
+| =ZH=    | seizure | =S IY ZH ER= |
 
 When they occur in n a phonetic regex, these phoneme literals should be space delimited. For example, =K AE T= is a phonetic regex which matches the English word "cat".
 
@@ -112,17 +112,17 @@ Consonant method-of-articulation arguments
 | x         | Approximant          |
 
 Examples:
-| Phoneme Class Definition | What It Matches                                        |
-|--------------------------+--------------------------------------------------------|
-| #                        | All consonants                                         |
-| #<,,>                    | All consonants                                         |
-| #<v>                     | All voiced consonants                                  |
-| #<v,,>                   | All voiced consonants                                  |
-| #<,,p>                   | All plosive consonants                                 |
-| #<v,,p>                  | All consonants which are both voiced and plosive       |
-| #<,bd,>                  | All consonants which are either bilabial or dental     |
-| #<,,fa>                  | All consonants which are either fricative or affricate |
-| #<u,bd,fa>               | All consonants which are unvoiced, and also either bilabial or dental, and also either fricative or affricate |
+| Phoneme Class Definition | What It Matches                                                                                               |
+|--------------------------+---------------------------------------------------------------------------------------------------------------|
+| =#=                      | All consonants                                                                                                |
+| =#<,,>=                  | All consonants                                                                                                |
+| =#<v>=                   | All voiced consonants                                                                                         |
+| =#<v,,>=                 | All voiced consonants                                                                                         |
+| =#<,,p>=                 | All plosive consonants                                                                                        |
+| =#<v,,p>=                | All consonants which are both voiced and plosive                                                              |
+| =#<,bd,>=                | All consonants which are either bilabial or dental                                                            |
+| =#<,,fa>=                | All consonants which are either fricative or affricate                                                        |
+| =#<u,bd,fa>=             | All consonants which are unvoiced, and also either bilabial or dental, and also either fricative or affricate |
 
 For vowel classes (the =@<,,>= pattern), three parameters may also be specified;
 - First, height
@@ -136,12 +136,12 @@ This is still in progress.
 Given a word and a meta-pattern, cl-phonetic can produce a phonetic regex implementing that pattern over the word. This includes things like rhyme, perfect rhyme, assonance, consonance, alliteration, etc.
 
 Examples of Sylvia's current behavior:
-| Metapattern    | Input Word | Input Pronunciation | Output Regex   | Example Matching Words                      |
-|----------------+------------+---------------------+----------------+---------------------------------------------|
-| :perfect-rhyme | Clap       | C L AE P            | .* AE P        | Rap, Milsap, Trap, Nap                      |
-| :near-rhyme    | Clap       | C L AE P            | .* AE #* P #*  | Rap, Raps, Clasp, Milsap, Synapse, Trapped  |
-| :vowel-match   | Clap       | C L AE P            | .* AE .*       | Rad, Bad, Saturday, Clapper, Clap           |
-| :vowel-match   | Clapper    | C L AE P ER         | .* AE #* ER .* | Dapper, Transfer, Unilateral, Staffordshire |
+| Metapattern      | Input Word | Input Pronunciation | Output Regex     | Example Matching Words                      |
+|------------------+------------+---------------------+------------------+---------------------------------------------|
+| =:perfect-rhyme= | Clap       | =C L AE P=          | =.* AE P=        | Rap, Milsap, Trap, Nap                      |
+| =:near-rhyme=    | Clap       | =C L AE P=          | =.* AE #* P #*=  | Rap, Raps, Clasp, Milsap, Synapse, Trapped  |
+| =:vowel-match=   | Clap       | =C L AE P=          | =.* AE .*=       | Rad, Bad, Saturday, Clapper, Clap           |
+| =:vowel-match=   | Clapper    | =C L AE P ER=       | =.* AE #* ER .*= | Dapper, Transfer, Unilateral, Staffordshire |
 
 One goal of cl-phonetic is to redefine "rhyme" and "near rhyme" to make better use of the properties of phonemes, potentially yielding more sensible results. For example, we could allow only unvoiced plosives between phonemes in =:near-rhyme=, rather than any consonant.
 
