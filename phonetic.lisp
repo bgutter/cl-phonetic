@@ -182,13 +182,14 @@ either a single value to match, or a list thereof."
                              (:alveolar      #\a))
                            :initial-value (coerce poa-chars 'list)))
          (moa-list ())
-         (voice    ()))
+         (voiced   ()))
       (apply #'concatenate `(string "[" ,@(mapcar
                                            (cl-utilities:compose #'string #'encoded-char)
                                            (query-phonemes :type :consonant
-                                                           :place-of-articulation poa-list
-                                                           :manner-of-articulation moa-list
-                                                           :voiced voiced))
+                                                           ;:place-of-articulation poa-list
+                                                           ;:manner-of-articulation moa-list
+                                        ;:voiced voiced
+                                                           ))
                                     "]")))))
 
 (defun expand-phoneme-expression (expstr)
@@ -256,9 +257,18 @@ either a single value to match, or a list thereof."
                                                  (and stress-str (parse-integer stress-str)))))
                               phoneme-strings)))
 
-;; cmudict Processing
+;; Dictionary Processing
 
-(defparameter *words* (make-hash-table :test 'equal))
+(defclass phonetic-dictionary ()
+  ((words :initarg :words
+          :accessor words
+          :initform (make-hash-table :test 'equal))))
+
+(defgeneric find-words (dict phonetic-regex)
+  (:documentation "Find all words in this dict whose pronunciation matches the given phonetic regex"))
+
+(defgeneric pronounce-word (dict word)
+  (:documentation "Find all pronunciations for the given word in this dictionary."))
 
 (defun normalize-word (dirty-word)
   "Maps something like \"FooBaR(1)\" to (values \"foobar\" 1)"
@@ -272,35 +282,19 @@ either a single value to match, or a list thereof."
   "Maps Ah to AH"
   (string-upcase dirty-phoneme))
 
-(defun learn-word (word phonemes)
-  "Given a word and a list of phonemes, sanitizes things and saves it."
+(defun learn-word (dict word phonemes)
+  "Given a phonetic dictionary, word and a list of phonemes, sanitizes
+things and save it."
   (let* ((clean-word     (normalize-word word))
-         (entry          (gethash clean-word *words*))
+         (entry          (gethash clean-word (words dict)))
          (clean-phonemes (mapcar #'normalize-phoneme phonemes))
          (pronunciation  (make-pronunciation clean-phonemes)))
-    (setf (gethash clean-word *words*) (cons pronunciation entry))))
-
-(defun read-cmudict (path)
-  "Read pronunciations in from a cmudict formatted text file."
-  (with-open-file (stream path :external-format :LATIN-1)
-    (do ((line (read-line stream nil)
-               (read-line stream nil)))
-        ((null line))
-      (cond
-        ((and (>= (length line) 3) (string-equal ";;;" (subseq line 0 3))) ;; Skip comment lines
-         )
-        ;; TODO skip symbols "!EXCLAMATION-POINT"
-        (t ;; In any other case, try to parse the line
-         (let*
-             ((tokens   (cl-utilities:split-sequence #\  line :remove-empty-subseqs t))
-              (word     (car tokens))
-              (phonemes (cdr tokens)))
-           (learn-word word phonemes)))))))
+    (setf (gethash clean-word (words dict)) (cons pronunciation entry))))
 
 ;; Glue
 
 (defun make-matcher (pres)
-  "Return a lambda form which tests if a given entry in *words* matches the given pres."
+  "Return a lambda form which tests if a given entry from a dict matches the given pres."
   (handler-bind
       ((cl-ppcre:ppcre-syntax-error
         #'(lambda (c)
@@ -313,27 +307,37 @@ either a single value to match, or a list thereof."
             (list (cons word pronunciations))
             nil)))))
 
-;; API
+;; Exported API
+;;
+;; (let ((dict (phonetic:from-cmudict "~/path/cmudict")))
+;;   (phonetic:find-words dict "@<v>*# D")
+;;   (phonetic:pronounce-word dict "Rubber"))
 
-#|
-Maybe an OO interface -- something like:
+(defun from-cmudict (path)
+  "Read pronunciations in from a cmudict formatted text file."
+  (let
+      ((new-dict (make-instance 'phonetic-dictionary)))
+    (with-open-file (stream path :external-format :LATIN-1)
+      (do ((line (read-line stream nil)
+                 (read-line stream nil)))
+          ((null line))
+        (cond
+          ((and (>= (length line) 3) (string-equal ";;;" (subseq line 0 3))) ;; Skip comment lines
+           )
+          ;; TODO skip symbols "!EXCLAMATION-POINT"
+          (t ;; In any other case, try to parse the line
+           (let*
+               ((tokens   (cl-utilities:split-sequence #\  line :remove-empty-subseqs t))
+                (word     (car tokens))
+                (phonemes (cdr tokens)))
+             (learn-word new-dict word phonemes))))))
+    new-dict))
 
-(let
-    ((my-phonetic (phonetic:from-dict "~/cmudict")))
-
-  (find-words my-phonetic "@/v,,f/+ # @/,,p/")
-  ;; -> at least one voiced, fricative consonant, followed by any vowel, followed by a plosive consonant
-
-  (pronounce-word my-phonetic "CATS"))
-  ;; -> '("K" "AE" "T" "S")
-
-|#
-
-(defun pronounce-word (dirty-word)
+(defmethod pronounce-word ((dict phonetic-dictionary) dirty-word)
   "Get the phoneme sequences stored for this word."
-  (gethash (normalize-word dirty-word) *words*))
+  (gethash (normalize-word dirty-word) (words dict)))
 
-(defun find-words (pres)
+(defmethod find-words ((dict phonetic-dictionary) pres)
   "Return a list of words which have a pronunciation matching regex."
   (let* ((matcher (make-matcher pres))
          (results nil)
@@ -341,6 +345,8 @@ Maybe an OO interface -- something like:
                              (if matchret
                                  (setq results (append matchret results))))))
     (if matcher
-        (maphash (lambda (word prn) (funcall match-aggregator (funcall matcher word prn))) *words*))
+        (maphash (lambda (word prn)
+                   (funcall match-aggregator (funcall matcher word prn)))
+                 (words dict)))
     results))
 
