@@ -273,6 +273,7 @@ either a single value to match, or a list thereof."
       ((alternator 1))
     (flet
         ((merge-closure (elt-left elt-right)
+           "Yields an infinite series of nil, t, nil, t, ..."
            (declare (ignorable elt-left elt-right))
            (> (setq alternator (* alternator -1)) 0)))
       (merge result-type
@@ -304,6 +305,11 @@ vowel phoneme matches exactly."
        (spaces-added (seqjoin 'list representations " ")))
     (apply 'concatenate 'string `(".* " ,@spaces-added))))
 
+(defun generate-regex/alliteration (phonemes)
+  "A regex which matches all words which begin with the same phoneme; this is
+going to match many, many words for virtually any input."
+  (concatenate 'string (phoneme-representation (first phonemes)) " .* "))
+
 (defun generate-regex (metapattern pronunciation)
   "Return an unencoded phonetic regex which implements `metapattern' over
 `pronunciation'."
@@ -312,7 +318,8 @@ vowel phoneme matches exactly."
        (phonemes          (mapcar #'car phonemes-stresses)))
     (case metapattern
       (perfect-rhyme (generate-regex/perfect-rhyme phonemes))
-      (near-rhyme    (generate-regex/near-rhyme phonemes)))))
+      (near-rhyme    (generate-regex/near-rhyme phonemes))
+      (alliteration  (generate-regex/alliteration phonemes)))))
 
 ;; Dictionary Processing
 
@@ -414,3 +421,14 @@ provided `metapattern' over `word'."
       ((first-pronunciation (first (pronounce-word dict word)))
        (regex (generate-regex metapattern first-pronunciation)))
     (find-words dict regex)))
+
+(defmethod test-metapattern ((dict phonetic-dictionary) metapattern word-a word-b)
+  "Test whether metapattern `metapattern' for word `word-a' is held over word `word-b'.
+TODO: This is currently using the first pronunciation for `word-a' over any pronunciation
+for `word-b'. It should probably just be an any/any (cross-product) sort of thing."
+  (let*
+      ((first-pronunciation-a (first (pronounce-word dict word-a)))
+       (pronunciations-b      (pronounce-word dict word-b))
+       (pres                  (generate-regex metapattern first-pronunciation-a))
+       (matcher               (make-matcher pres)))
+    (funcall matcher word-b pronunciations-b)))
