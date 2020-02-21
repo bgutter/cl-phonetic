@@ -67,12 +67,12 @@ with at least 50 or so following codes to spare.")
   (macrolet ((vowel (name)
                `(make-instance 'vowel
                                :name ,name
-                               :type :vowel))
+                               :type 'vowel))
              (consonant (name voiced poa moa)
                `(make-instance 'consonant
                                :name ,name
-                               :type :consonant
-                               :voiced (equal ,voiced :voiced)
+                               :type 'consonant
+                               :voiced ,voiced
                                :place-of-articulation ,poa
                                :manner-of-articulation ,moa)))
     (list
@@ -82,39 +82,61 @@ with at least 50 or so following codes to spare.")
      (vowel     :AO)
      (vowel     :AW)
      (vowel     :AY)
-     (consonant :B  :voiced   :bilabial      :plosive)
-     (consonant :CH :unvoiced :post-alveolar :affricate)
-     (consonant :D  :voiced   :alveolar      :plosive)
-     (consonant :DH :voiced   :dental        :fricative)
+     (consonant :B  'voiced   :bilabial      :plosive)
+     (consonant :CH 'unvoiced :post-alveolar :affricate)
+     (consonant :D  'voiced   :alveolar      :plosive)
+     (consonant :DH 'voiced   :dental        :fricative)
      (vowel     :EH)
      (vowel     :ER)
      (vowel     :EY)
-     (consonant :F  :unvoiced :labio-dental  :fricative)
-     (consonant :G  :voiced   :velar         :plosive)
-     (consonant :HH :unvoiced :glottal       :fricative)
+     (consonant :F  'unvoiced :labio-dental  :fricative)
+     (consonant :G  'voiced   :velar         :plosive)
+     (consonant :HH 'unvoiced :glottal       :fricative)
      (vowel     :IH)
      (vowel     :IY)
-     (consonant :JH :voiced   :post-alveolar :affricate)
-     (consonant :K  :unvoiced :velar         :plosive)
-     (consonant :L  :voiced   :alveolar      :lateral)
-     (consonant :M  :voiced   :bilabial      :nasal)
-     (consonant :N  :voiced   :alveolar      :nasal)
-     (consonant :NG :voiced   :velar         :nasal)
+     (consonant :JH 'voiced   :post-alveolar :affricate)
+     (consonant :K  'unvoiced :velar         :plosive)
+     (consonant :L  'voiced   :alveolar      :lateral)
+     (consonant :M  'voiced   :bilabial      :nasal)
+     (consonant :N  'voiced   :alveolar      :nasal)
+     (consonant :NG 'voiced   :velar         :nasal)
      (vowel     :OW)
      (vowel     :OY)
-     (consonant :P  :unvoiced :bilabial      :plosive)
-     (consonant :R  :voiced   :post-alveolar :approximant)
-     (consonant :S  :unvoiced :alveolar      :fricative)
-     (consonant :SH :unvoiced :post-alveolar :fricative)
-     (consonant :T  :unvoiced :alveolar      :plosive)
-     (consonant :TH :unvoiced :dental        :fricative)
+     (consonant :P  'unvoiced :bilabial      :plosive)
+     (consonant :R  'voiced   :post-alveolar :approximant)
+     (consonant :S  'unvoiced :alveolar      :fricative)
+     (consonant :SH 'unvoiced :post-alveolar :fricative)
+     (consonant :T  'unvoiced :alveolar      :plosive)
+     (consonant :TH 'unvoiced :dental        :fricative)
      (vowel     :UH)
      (vowel     :UW)
-     (consonant :V  :voiced   :labio-dental  :fricative)
-     (consonant :W  :voiced   :bilabial      :approximant)
-     (consonant :Y  :voiced   :palatal       :approximant)
-     (consonant :Z  :voiced   :alveolar      :fricative)
-     (consonant :ZH :voiced   :post-alveolar :fricative))))
+     (consonant :V  'voiced   :labio-dental  :fricative)
+     (consonant :W  'voiced   :bilabial      :approximant)
+     (consonant :Y  'voiced   :palatal       :approximant)
+     (consonant :Z  'voiced   :alveolar      :fricative)
+     (consonant :ZH 'voiced   :post-alveolar :fricative))))
+
+(defparameter *consonant-voiced-char-map*
+  '((#\v . voiced)
+    (#\u . unvoiced)))
+
+(defparameter *consonant-poa-char-map*
+  '((#\a . :alveolar)
+    (#\b . :bilabial)
+    (#\d . :dental)
+    (#\g . :glottal)
+    (#\l . :labio-dental)
+    (#\p . :post-alveolar)
+    (#\t . :palatal)
+    (#\v . :velar)))
+
+(defparameter *consonant-moa-char-map*
+  '((#\a . :affricate)
+    (#\f . :fricative)
+    (#\l . :lateral)
+    (#\n . :nasal)
+    (#\p . :plosive)
+    (#\x . :approximant)))
 
 (defun encode-phonemes (pres)
   "Replace any phoneme literal sequences in PRES with their encoded values.
@@ -134,30 +156,28 @@ with at least 50 or so following codes to spare.")
         :test 'equal
         :key #'phoneme-representation))
 
-(defun query-phonemes (&key (type nil type-p) (place-of-articulation nil poa-p) (manner-of-articulation nil moa-p))
+(defun query-phonemes (type &key voiced place-of-articulation manner-of-articulation)
   "Return a list of all phonemes matching query. Each parameter can be
-either a single value to match, or a list thereof."
-  (remove-if-not #'(lambda (phoneme)
-                     (let ((this-type (phoneme-type phoneme))
-                           (this-poa  (and (eq (phoneme-type phoneme) :consonant)
-                                           (place-of-articulation phoneme)))
-                           (this-moa  (and (eq (phoneme-type phoneme) :consonant)
-                                           (manner-of-articulation phoneme))))
-                       ;; TODO: This code should be more DRY
-                       (and
-                        (or (not type-p)
-                            (if (listp type)
-                                (member this-type type)
-                                (equal this-type type)))
-                        (or (not poa-p)
-                            (if (listp place-of-articulation)
-                                (member this-poa place-of-articulation)
-                                (equal this-poa place-of-articulation)))
-                        (or (not moa-p)
-                            (if (listp manner-of-articulation)
-                                (member this-moa manner-of-articulation)
-                                (equal this-moa manner-of-articulation))))))
-                 *phonemes*))
+either a single value to match, or a list thereof. Unprovided parameters are
+considered wildcards."
+  (labels
+
+      ((equal-if-applicable (param against)
+         (or (not param)
+             (if (listp param)
+                 (member against param :test #'equal)
+                 (equal param against))))
+
+       (matching-phoneme-p (phoneme)
+         (and
+          (equal type (phoneme-type phoneme))
+          (or (equal 'vowel (phoneme-type phoneme))
+              (and
+               (equal-if-applicable voiced (voiced-p phoneme))
+               (equal-if-applicable place-of-articulation (place-of-articulation phoneme))
+               (equal-if-applicable manner-of-articulation (manner-of-articulation phoneme)))))))
+
+    (remove-if-not #'matching-phoneme-p *phonemes*)))
 
 (defun expand-phoneme-expression/vowels (vowel-expstr)
   "Replace a vowel expression with a Perl-compatible character class which implements it."
@@ -165,37 +185,39 @@ either a single value to match, or a list thereof."
   ;; TODO
   (apply #'concatenate `(string "[" ,@(mapcar
                                        (cl-utilities:compose #'string #'encoded-char)
-                                       (query-phonemes :type :vowel))
+                                       (query-phonemes 'vowel))
                                 "]")))
 
 (defun expand-phoneme-expression/consonants (opts)
   "Replace a consonant expression with a Perl-compatible character class which implements it."
   (destructuring-bind (&optional voiced-chars poa-chars moa-chars) opts
-    (let
-        ((poa-list (reduce (lambda (lis pair)
-                             (format t "PAIR: ~A~%LIST:~A ~%" pair lis)
-                             (substitute (car pair)
-                                         (cadr pair)
-                                         lis))
-                           '((:bilabial      #\b)
-                             (:post-alveolar #\p)
-                             (:alveolar      #\a))
-                           :initial-value (coerce poa-chars 'list)))
-         (moa-list ())
-         (voiced   ()))
-      (apply #'concatenate `(string "[" ,@(mapcar
-                                           (cl-utilities:compose #'string #'encoded-char)
-                                           (query-phonemes :type :consonant
-                                                           ;:place-of-articulation poa-list
-                                                           ;:manner-of-articulation moa-list
-                                        ;:voiced voiced
-                                                           ))
-                                    "]")))))
+    (flet
+        ((remap-char-generator (char-alist)
+           (lambda (char)
+             (let ((cns (assoc char char-alist)))
+               (if (null cns)
+                   (format t "TODO signal here")
+                   (cdr cns))))))
+      (let
+          ((moa-list (mapcar (remap-char-generator *consonant-moa-char-map*)
+                             moa-chars))
+           (poa-list (mapcar (remap-char-generator *consonant-poa-char-map*)
+                             poa-chars))
+           (voiced (mapcar (remap-char-generator *consonant-voiced-char-map*)
+                           voiced-chars)))
+        (apply #'concatenate `(string "[" ,@(mapcar
+                                             (cl-utilities:compose #'string #'encoded-char)
+                                             (query-phonemes 'consonant
+                                                             :place-of-articulation poa-list
+                                                             :manner-of-articulation moa-list
+                                                             :voiced voiced))
+                                      "]"))))))
 
 (defun expand-phoneme-expression (expstr)
   "Convert something like @<v,,p> to [...encoded phonemes...]"
   (let ((opts (if (>= (length expstr) 3)
-                  (cl-utilities:split-sequence #\, (subseq expstr 2 (- (length expstr) 1)))
+                  (mapcar (lambda (str) (coerce str 'list))
+                   (cl-utilities:split-sequence #\, (subseq expstr 2 (- (length expstr) 1))))
                   nil)))
     (case (aref expstr 0)
       (#\@ (expand-phoneme-expression/vowels opts))
@@ -286,7 +308,7 @@ either a single value to match, or a list thereof."
 the first vowel phoneme matches, but with extra consonants interspersed."
   (let*
       ((first-vowel-pos (position-if (lambda (phoneme)
-                                     (eq (phoneme-type phoneme) :vowel))
+                                     (eq (phoneme-type phoneme) 'vowel))
                                    phonemes))
        (first-vowel-to-end (subseq phonemes first-vowel-pos))
        (representations (mapcar 'phoneme-representation first-vowel-to-end))
@@ -298,7 +320,7 @@ the first vowel phoneme matches, but with extra consonants interspersed."
 vowel phoneme matches exactly."
   (let*
       ((first-vowel-pos (position-if (lambda (phoneme)
-                                     (eq (phoneme-type phoneme) :vowel))
+                                     (eq (phoneme-type phoneme) 'vowel))
                                    phonemes))
        (first-vowel-to-end (subseq phonemes first-vowel-pos))
        (representations (mapcar 'phoneme-representation first-vowel-to-end))
