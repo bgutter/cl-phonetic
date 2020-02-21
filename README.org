@@ -1,6 +1,4 @@
 #+TITLE: cl-phonetic
-#+PROPERTY: header-args:lisp :results raw drawer
-
 
 A phonetic pattern matching library for Common Lisp.
 
@@ -167,7 +165,7 @@ Calculating phoneme N-grams, at the bare minimum. Basically a quick-path for pro
 
 Currently, only cmudict-like text files are supported.
 
-#+begin_src lisp
+#+begin_src lisp :exports both :results raw drawer
 (defparameter *dict* (from-cmudict #P"cmudict"))
 #+end_src
 
@@ -182,7 +180,7 @@ Currently, only cmudict-like text files are supported.
 
 Sometimes, there's just one pronunciation in it:
 
-#+begin_src lisp
+#+begin_src lisp :exports both :results raw drawer
 (pronounce-word *dict* "creepy")
 #+end_src
 
@@ -194,7 +192,7 @@ T
 
 Sometimes, there's more:
 
-#+begin_src lisp
+#+begin_src lisp :exports both :results raw drawer
 (pronounce-word *dict* "tomato")
 #+end_src
 
@@ -208,7 +206,7 @@ T
 
 =regex-search= returns an alist of words (strings) and pronunciation lists.
 
-#+begin_src lisp
+#+begin_src lisp :exports both :results raw drawer
 (regex-search *dict* "K AE T")
 #+end_src
 
@@ -220,7 +218,7 @@ T
 
 =the-words= takes an alist of that form and returns list a list of words.
 
-#+begin_src lisp
+#+begin_src lisp :exports both :results raw drawer
 (the-words (regex-search *dict* "K AE T"))
 #+end_src
 
@@ -231,7 +229,7 @@ T
 
 The regex are generally Perl-like. Searching is done as "matches", meaning that the word's pronunciation must match the entire regex. Add =.*= to both ends if you want a scanning behavior.
 
-#+begin_src lisp
+#+begin_src lisp :exports both :results raw drawer
 (the-words (regex-search *dict* ".* K AE T .*"))
 #+end_src
 
@@ -266,7 +264,7 @@ The regex are generally Perl-like. Searching is done as "matches", meaning that 
 
 Again, anything that works with Perl should work here. =.?= translates to "optionally, a single phoneme of any kind".
 
-#+begin_src lisp
+#+begin_src lisp :exports both :results raw drawer
 (the-words (regex-search *dict* ".? AE T"))
 #+end_src
 
@@ -281,7 +279,7 @@ And so on.
 
 Consonants are encoded with =#= symbols.
 
-#+begin_src lisp
+#+begin_src lisp :exports both :results raw drawer
 (the-words (regex-search *dict* "# AE T"))
 #+end_src
 
@@ -296,7 +294,7 @@ They can be further restricted by voicing, place of articulation, and manner of 
 
 For example, here are the words ending with "AE T" that begin with a voiced, fricative consonant:
 
-#+begin_src lisp
+#+begin_src lisp :exports both :results raw drawer
 (the-words (regex-search *dict* "#<v,,f> AE T"))
 #+end_src
 
@@ -307,7 +305,7 @@ For example, here are the words ending with "AE T" that begin with a voiced, fri
 
 And the words ending with "AE T" that begin with a bilabial, plosive consonant:
 
-#+begin_src lisp
+#+begin_src lisp :exports both :results raw drawer
 (the-words (regex-search *dict* "#<,b,p> AE T"))
 #+end_src
 
@@ -318,7 +316,7 @@ And the words ending with "AE T" that begin with a bilabial, plosive consonant:
 
 And the words ending with "AE T" that begin with a bilabial or labio-dental consonant:
 
-#+begin_src lisp
+#+begin_src lisp :exports both :results raw drawer
 (the-words (regex-search *dict* "#<,bl,> AE T"))
 #+end_src
 
@@ -331,7 +329,7 @@ And the words ending with "AE T" that begin with a bilabial or labio-dental cons
 
 =generate-regex= creates a phonetic regular expression from a predefined metapattern and a word.
 
-#+begin_src lisp
+#+begin_src lisp :exports both :results raw drawer
 (generate-regex 'perfect-rhyme (first (pronounce-word *dict* "Candor")))
 #+end_src
 
@@ -342,7 +340,7 @@ And the words ending with "AE T" that begin with a bilabial or labio-dental cons
 
 Searching for this regex yields words that perfectly rhyme with "Candor".
 
-#+begin_src lisp
+#+begin_src lisp :exports both :results raw drawer
      (the-words (regex-search *dict*
                               (generate-regex 'perfect-rhyme
                                               (first (pronounce-word *dict* "Candor")))))
@@ -366,7 +364,7 @@ But, if all you're going to do is search for the generated regex, just use =find
 
 =find-metapattern= wraps the process of generating a regular expression & searching it:
 
-#+begin_src lisp
+#+begin_src lisp :exports both :results raw drawer
 (the-words (find-metapattern *dict* 'near-rhyme "Turkey"))
 #+end_src
 
@@ -385,7 +383,7 @@ But, if all you're going to do is search for the generated regex, just use =find
 
 =test-metapattern= just tests whether a metapattern holds over two words.
 
-#+begin_src lisp
+#+begin_src lisp :exports both :results raw drawer
 (test-metapattern *dict* 'alliteration "Xenon" "Czar")
 #+end_src
 
@@ -394,7 +392,7 @@ But, if all you're going to do is search for the generated regex, just use =find
 (("Czar" #<PRONUNCIATION (Z AA R)>))
 :end:
 
-#+begin_src lisp
+#+begin_src lisp :exports both :results raw drawer
 (test-metapattern *dict* 'perfect-rhyme "Wallet" "Stanford")
 #+end_src
 
