@@ -1,4 +1,6 @@
 #+TITLE: cl-phonetic
+#+PROPERTY: header-args:lisp :results raw drawer
+
 
 A phonetic pattern matching library for Common Lisp.
 
@@ -161,28 +163,244 @@ Calculating phoneme N-grams, at the bare minimum. Basically a quick-path for pro
 
 * User Manual
 
-TODO: Flesh this out
+** Reading a Phonetic Dictionary
+
+Currently, only cmudict-like text files are supported.
 
 #+begin_src lisp
-  (let
-      ;; Open a cmudict-compatible file
-      ((my-dict (from-cmudict "path/to/cmudict")))
-
-    ;; Look up all pronunciations for word
-    (pronounce-word my-dict "creepy") ;; -> #<(K R IY P IY)>
-
-    ;; Find words which match a phonetic regex
-    (find-words my-dict "# AE T") ;; -> '("Bat" "Vat" "Cat" "That" "Sat" ...)
-    (find-words my-dict "#<v,,f> AE T") ;; -> '("Vat" "That" ...)
-
-    ;; Find words which match a phonetic metapattern
-    (find-metapattern my-dict 'perfect-rhyme "Chatter") ;; -> '("Matter" "Blatter" "Clatter" ...)
-    (find-metapattern my-dict 'near-rhyme "Chatter")    ;; -> '("Matter" "Blatter" "Clatter" "Antler" "Actor" "Adapter" ...)
-
-    ;; Test metapatterns
-    (test-metapattern my-dict 'near-rhyme   "Back"  "Fact")  ;; -> t
-    (test-metapattern my-dict 'alliteration "Xenon" "Czar")  ;; -> t
-    (test-metapattern my-dict 'alliteration "Car"   "Czar")) ;; -> nil
+(defparameter *dict* (from-cmudict #P"cmudict"))
 #+end_src
+
+#+RESULTS:
+:results:
+*DICT*
+:end:
+
+** Pronounce a word.
+
+=pronounce-word= produces a list of =pronunciation= objects.
+
+Sometimes, there's just one pronunciation in it:
+
+#+begin_src lisp
+(pronounce-word *dict* "creepy")
+#+end_src
+
+#+RESULTS:
+:results:
+(#<PRONUNCIATION (K R IY P IY)>)
+T
+:end:
+
+Sometimes, there's more:
+
+#+begin_src lisp
+(pronounce-word *dict* "tomato")
+#+end_src
+
+#+RESULTS:
+:results:
+(#<PRONUNCIATION (T AH M AA T OW)> #<PRONUNCIATION (T AH M EY T OW)>)
+T
+:end:
+
+** Search for words matching a phonetic regular expression.
+
+=regex-search= returns an alist of words (strings) and pronunciation lists.
+
+#+begin_src lisp
+(regex-search *dict* "K AE T")
+#+end_src
+
+#+RESULTS:
+:results:
+(("katt" #<PRONUNCIATION (K AE T)>) ("kat" #<PRONUNCIATION (K AE T)>)
+ ("catt" #<PRONUNCIATION (K AE T)>) ("cat" #<PRONUNCIATION (K AE T)>))
+:end:
+
+=the-words= takes an alist of that form and returns list a list of words.
+
+#+begin_src lisp
+(the-words (regex-search *dict* "K AE T"))
+#+end_src
+
+#+RESULTS:
+:results:
+("katt" "kat" "catt" "cat")
+:end:
+
+The regex are generally Perl-like. Searching is done as "matches", meaning that the word's pronunciation must match the entire regex. Add =.*= to both ends if you want a scanning behavior.
+
+#+begin_src lisp
+(the-words (regex-search *dict* ".* K AE T .*"))
+#+end_src
+
+#+RESULTS:
+:results:
+("yekaterinburg" "wildcatting" "wildcatters" "wildcatter" "wildcats" "wildcat"
+ "wicat" "tomcat" "thundercats" "thundercat" "scattershot" "scattering"
+ "scattergory" "scattergories" "scattergood" "scattered" "scatter" "scatology"
+ "scatological" "scat" "pussycats" "pussycat" "polecats" "polecat" "piscataway"
+ "muscat" "metlakatla" "mchatton" "mcatee" "kotsonis's" "kotsonis'" "kotsonis"
+ "kitcat" "kikatte" "katzman" "katzin" "katzer" "katzenstein" "katzenberger"
+ "katzenberg's" "katzenberg" "katzenbach" "katzen" "katz" "kattner" "katt"
+ "katsushi" "katsaros" "katsanos" "kats" "katmandu" "katashiba" "kat"
+ "copycatting" "copycats" "copycat" "concatenation" "concatenating"
+ "concatenates" "concatenated" "concatenate" "catwoman" "catwalk" "catty"
+ "catton" "catto" "cattlemen's" "cattlemen" "cattle" "catterton" "catterson"
+ "catterall" "cattanach" "catt" "catskills" "catskill" "cats" "catron"
+ "catrett" "catrambone" "caton" "catoe" "catnip" "catnap" "catlin" "catlike"
+ "catlett" "catledge" "catkins" "catfish" "caterwaul" "caterpiller's"
+ "caterpiller" "caterpillars" "caterpillar's" "caterpillar" "category"
+ "categorizing" "categorizes" "categorized" "categorize" "categorization"
+ "categories" "categorically" "categorical" "catechism" "catcalls" "catcall"
+ "catbird" "catatonic" "catastrophic" "cataracts" "cataract" "catapults"
+ "catapulting" "catapulted" "catapult" "catamount" "catalyzed" "catalyze"
+ "catalytic" "catalysts" "catalyst's" "catalyst" "catalonian" "catalonia"
+ "cataloguing" "catalogues" "catalogued" "catalogue" "catalogs" "cataloging"
+ "catalogers" "cataloger" "cataloged" "catalog" "catalina" "catalans" "catalan"
+ "catala" "catain" "catacombs" "catacomb" "cataclysmic" "cataclysm"
+ "cat-o-nine-tails" "cat-6" "cat-4" "cat-3" "cat-2" "cat-1" "cat's" "cat"
+ "bobcats" "bobcat" "bacot")
+:end:
+
+Again, anything that works with Perl should work here. =.?= translates to "optionally, a single phoneme of any kind".
+
+#+begin_src lisp
+(the-words (regex-search *dict* ".? AE T"))
+#+end_src
+
+#+RESULTS:
+:results:
+("vat" "that" "tat" "shatt" "schadt" "sat" "ratte" "rat" "patt" "pat" "nat"
+ "matte" "matt" "mat" "lat" "katt" "kat" "jagt" "hatt" "hat" "gnat" "gatt"
+ "gat" "fat" "dat" "chat" "catt" "cat" "bhatt" "batte" "batt" "bat" "at")
+:end:
+
+And so on.
+
+Consonants are encoded with =#= symbols.
+
+#+begin_src lisp
+(the-words (regex-search *dict* "# AE T"))
+#+end_src
+
+#+RESULTS:
+:results:
+("vat" "that" "tat" "shatt" "schadt" "sat" "ratte" "rat" "patt" "pat" "nat"
+ "matte" "matt" "mat" "lat" "katt" "kat" "jagt" "hatt" "hat" "gnat" "gatt"
+ "gat" "fat" "dat" "chat" "catt" "cat" "bhatt" "batte" "batt" "bat")
+:end:
+
+They can be further restricted by voicing, place of articulation, and manner of articulation.
+
+For example, here are the words ending with "AE T" that begin with a voiced, fricative consonant:
+
+#+begin_src lisp
+(the-words (regex-search *dict* "#<v,,f> AE T"))
+#+end_src
+
+#+RESULTS:
+:results:
+("vat" "that")
+:end:
+
+And the words ending with "AE T" that begin with a bilabial, plosive consonant:
+
+#+begin_src lisp
+(the-words (regex-search *dict* "#<,b,p> AE T"))
+#+end_src
+
+#+RESULTS:
+:results:
+("patt" "pat" "bhatt" "batte" "batt" "bat")
+:end:
+
+And the words ending with "AE T" that begin with a bilabial or labio-dental consonant:
+
+#+begin_src lisp
+(the-words (regex-search *dict* "#<,bl,> AE T"))
+#+end_src
+
+#+RESULTS:
+:results:
+("vat" "patt" "pat" "matte" "matt" "mat" "fat" "bhatt" "batte" "batt" "bat")
+:end:
+
+** Generating a phonetic regular expression
+
+=generate-regex= creates a phonetic regular expression from a predefined metapattern and a word.
+
+#+begin_src lisp
+(generate-regex 'perfect-rhyme (first (pronounce-word *dict* "Candor")))
+#+end_src
+
+#+RESULTS:
+:results:
+.* AE N D ER
+:end:
+
+Searching for this regex yields words that perfectly rhyme with "Candor".
+
+#+begin_src lisp
+     (the-words (regex-search *dict*
+                              (generate-regex 'perfect-rhyme
+                                              (first (pronounce-word *dict* "Candor")))))
+#+end_src
+
+#+RESULTS:
+:results:
+("zander" "wicklander" "vandevander" "vander" "telander" "swartzlander"
+ "subcommander" "standre" "stander" "stadtlander" "slander" "skenandore"
+ "sjolander" "scalamandre" "santander" "sandor" "sander" "salamander"
+ "rosander" "rander" "philander" "pander" "oleander" "nederlander" "meander"
+ "mcalexander" "mander" "mainlander" "lysander" "leander" "landor" "lander"
+ "highlander" "hander" "grander" "glander" "gerrymander" "gander" "evander"
+ "coriander" "commander" "candor" "calamander" "bystander" "brander" "blander"
+ "bander" "aulander" "ander" "alexander" "aleksandr" "aleksander")
+:end:
+
+But, if all you're going to do is search for the generated regex, just use =find-metapattern=...
+
+** Searching for rhymes, and other metapatterns
+
+=find-metapattern= wraps the process of generating a regular expression & searching it:
+
+#+begin_src lisp
+(the-words (find-metapattern *dict* 'near-rhyme "Turkey"))
+#+end_src
+
+#+RESULTS:
+:results:
+("yerkey" "yerkes" "yaworski" "xerxes" "workweeks" "workweek" "worksheets"
+ "worksheet" "tyburski" "twersky" "turski" "turnkey" "turkeys" "turkey's"
+ "turkey" "swirsky" "swiderski" "sturkie" "stachurski" "sircy" "shirkey"
+ "quirky" "purkey" "podgurski" "pirkey" "persky" "perky" "perkey" "pearcy"
+ "murky" "mirsky" "merkley" "merkey" "kuberski" "koperski" "kirksey" "kirkley"
+ "kirkey" "kirkby" "kasperski" "jerky" "hirschfield" "gursky" "gurski" "girsky"
+ "gerski" "gerke" "figurski" "dworsky" "durkee" "burkley" "burkey" "burkeen"
+ "birky" "birkey" "bertke" "berkley" "berklee" "berkey" "berkeley's" "berkeley"
+ "anarchy" "aldercy" "albuquerque")
+:end:
+
+=test-metapattern= just tests whether a metapattern holds over two words.
+
+#+begin_src lisp
+(test-metapattern *dict* 'alliteration "Xenon" "Czar")
+#+end_src
+
+#+RESULTS:
+:results:
+(("Czar" #<PRONUNCIATION (Z AA R)>))
+:end:
+
+#+begin_src lisp
+(test-metapattern *dict* 'perfect-rhyme "Wallet" "Stanford")
+#+end_src
+
+#+RESULTS:
+:results:
+NIL
+:end:
 
 

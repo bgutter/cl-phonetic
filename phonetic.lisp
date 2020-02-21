@@ -55,10 +55,7 @@ with at least 50 or so following codes to spare.")
 
 (defmethod print-object ((p phoneme) out)
   (print-unreadable-object (p out :type t)
-    (format out "~A" (list (phoneme-name p)
-                           (phoneme-type p)
-                           (phoneme-representation p)
-                           (encoded-value p)))))
+    (format out "~A" (phoneme-representation p))))
 
 (defmethod encoded-char ((p phoneme))
   (code-char (encoded-value p)))
@@ -260,7 +257,8 @@ considered wildcards."
 
 (defmethod print-object ((pr pronunciation) out)
   (print-unreadable-object (pr out :type t)
-    (format out "~A" (phoneme-stress-alist pr))))
+    (format out "~A" (mapcar (cl-utilities:compose #'phoneme-representation #'car)
+                      (phoneme-stress-alist pr)))))
 
 (defmethod initialize-instance :after ((pr pronunciation) &rest ignored)
   "Render the encoded version."
@@ -350,7 +348,7 @@ going to match many, many words for virtually any input."
           :accessor words
           :initform (make-hash-table :test 'equal))))
 
-(defgeneric find-words (dict phonetic-regex)
+(defgeneric regex-search (dict phonetic-regex)
   (:documentation "Find all words in this dict whose pronunciation matches the given phonetic regex"))
 
 (defgeneric pronounce-word (dict word)
@@ -393,12 +391,6 @@ things and save it."
             (list (cons word pronunciations))
             nil)))))
 
-;; Exported API
-;;
-;; (let ((dict (phonetic:from-cmudict "~/path/cmudict")))
-;;   (phonetic:find-words dict "@<v>*# D")
-;;   (phonetic:pronounce-word dict "Rubber"))
-
 (defun from-cmudict (path)
   "Read pronunciations in from a cmudict formatted text file."
   (let
@@ -423,7 +415,7 @@ things and save it."
   "Get the phoneme sequences stored for this word."
   (gethash (normalize-word dirty-word) (words dict)))
 
-(defmethod find-words ((dict phonetic-dictionary) pres)
+(defmethod regex-search ((dict phonetic-dictionary) pres)
   "Return a list of words which have a pronunciation matching regex."
   (let* ((matcher (make-matcher pres))
          (results nil)
@@ -442,7 +434,7 @@ provided `metapattern' over `word'."
   (let*
       ((first-pronunciation (first (pronounce-word dict word)))
        (regex (generate-regex metapattern first-pronunciation)))
-    (find-words dict regex)))
+    (regex-search dict regex)))
 
 (defmethod test-metapattern ((dict phonetic-dictionary) metapattern word-a word-b)
   "Test whether metapattern `metapattern' for word `word-a' is held over word `word-b'.
@@ -454,3 +446,15 @@ for `word-b'. It should probably just be an any/any (cross-product) sort of thin
        (pres                  (generate-regex metapattern first-pronunciation-a))
        (matcher               (make-matcher pres)))
     (funcall matcher word-b pronunciations-b)))
+
+;; Convenience
+
+(defun the-words (dict-entries)
+  "Many cl-phonetic APIs return an alist mapping words to pronunciations. Call this if
+you just want the words themselves."
+  (mapcar 'car dict-entries))
+
+(defun the-pronunciations (dict-entries)
+  "Many cl-phonetic APIs return an alist mapping words to pronunciations. Call this if
+you just want the words themselves."
+  (mapcar 'cdr dict-entries))
