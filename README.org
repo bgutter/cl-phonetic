@@ -170,9 +170,9 @@ Currently, only cmudict-like text files are supported.
 #+end_src
 
 #+RESULTS:
-:results:
+#+begin_example
 *DICT*
-:end:
+#+end_example
 
 ** Pronounce a word.
 
@@ -185,10 +185,10 @@ Sometimes, there's just one pronunciation in it:
 #+end_src
 
 #+RESULTS:
-:results:
+#+begin_example
 (#<PRONUNCIATION (K R IY P IY)>)
 T
-:end:
+#+end_example
 
 Sometimes, there's more:
 
@@ -197,10 +197,10 @@ Sometimes, there's more:
 #+end_src
 
 #+RESULTS:
-:results:
+#+begin_example
 (#<PRONUNCIATION (T AH M AA T OW)> #<PRONUNCIATION (T AH M EY T OW)>)
 T
-:end:
+#+end_example
 
 ** Search for words matching a phonetic regular expression.
 
@@ -211,10 +211,10 @@ T
 #+end_src
 
 #+RESULTS:
-:results:
+#+begin_example
 (("katt" #<PRONUNCIATION (K AE T)>) ("kat" #<PRONUNCIATION (K AE T)>)
  ("catt" #<PRONUNCIATION (K AE T)>) ("cat" #<PRONUNCIATION (K AE T)>))
-:end:
+#+end_example
 
 =the-words= takes an alist of that form and returns list a list of words.
 
@@ -223,9 +223,9 @@ T
 #+end_src
 
 #+RESULTS:
-:results:
+#+begin_example
 ("katt" "kat" "catt" "cat")
-:end:
+#+end_example
 
 The regex are generally Perl-like. Searching is done as "matches", meaning that the word's pronunciation must match the entire regex. Add =.*= to both ends if you want a scanning behavior.
 
@@ -234,7 +234,7 @@ The regex are generally Perl-like. Searching is done as "matches", meaning that 
 #+end_src
 
 #+RESULTS:
-:results:
+#+begin_example
 ("yekaterinburg" "wildcatting" "wildcatters" "wildcatter" "wildcats" "wildcat"
  "wicat" "tomcat" "thundercats" "thundercat" "scattershot" "scattering"
  "scattergory" "scattergories" "scattergood" "scattered" "scatter" "scatology"
@@ -260,7 +260,7 @@ The regex are generally Perl-like. Searching is done as "matches", meaning that 
  "catala" "catain" "catacombs" "catacomb" "cataclysmic" "cataclysm"
  "cat-o-nine-tails" "cat-6" "cat-4" "cat-3" "cat-2" "cat-1" "cat's" "cat"
  "bobcats" "bobcat" "bacot")
-:end:
+#+end_example
 
 Again, anything that works with Perl should work here. =.?= translates to "optionally, a single phoneme of any kind".
 
@@ -269,11 +269,12 @@ Again, anything that works with Perl should work here. =.?= translates to "optio
 #+end_src
 
 #+RESULTS:
-:results:
+#+begin_example
 ("vat" "that" "tat" "shatt" "schadt" "sat" "ratte" "rat" "patt" "pat" "nat"
  "matte" "matt" "mat" "lat" "katt" "kat" "jagt" "hatt" "hat" "gnat" "gatt"
  "gat" "fat" "dat" "chat" "catt" "cat" "bhatt" "batte" "batt" "bat" "at")
-:end:
+#+end_example
+
 
 And so on.
 
@@ -284,11 +285,11 @@ Consonants are encoded with =#= symbols.
 #+end_src
 
 #+RESULTS:
-:results:
+#+begin_example
 ("vat" "that" "tat" "shatt" "schadt" "sat" "ratte" "rat" "patt" "pat" "nat"
  "matte" "matt" "mat" "lat" "katt" "kat" "jagt" "hatt" "hat" "gnat" "gatt"
  "gat" "fat" "dat" "chat" "catt" "cat" "bhatt" "batte" "batt" "bat")
-:end:
+#+end_example
 
 They can be further restricted by voicing, place of articulation, and manner of articulation.
 
@@ -299,9 +300,9 @@ For example, here are the words ending with "AE T" that begin with a voiced, fri
 #+end_src
 
 #+RESULTS:
-:results:
+#+begin_example
 ("vat" "that")
-:end:
+#+end_example
 
 And the words ending with "AE T" that begin with a bilabial, plosive consonant:
 
@@ -310,9 +311,9 @@ And the words ending with "AE T" that begin with a bilabial, plosive consonant:
 #+end_src
 
 #+RESULTS:
-:results:
+#+begin_example
 ("patt" "pat" "bhatt" "batte" "batt" "bat")
-:end:
+#+end_example
 
 And the words ending with "AE T" that begin with a bilabial or labio-dental consonant:
 
@@ -321,9 +322,9 @@ And the words ending with "AE T" that begin with a bilabial or labio-dental cons
 #+end_src
 
 #+RESULTS:
-:results:
+#+begin_example
 ("vat" "patt" "pat" "matte" "matt" "mat" "fat" "bhatt" "batte" "batt" "bat")
-:end:
+#+end_example
 
 ** Generating a phonetic regular expression
 
@@ -334,9 +335,9 @@ And the words ending with "AE T" that begin with a bilabial or labio-dental cons
 #+end_src
 
 #+RESULTS:
-:results:
+#+begin_example
 .* AE N D ER
-:end:
+#+end_example
 
 Searching for this regex yields words that perfectly rhyme with "Candor".
 
@@ -347,7 +348,7 @@ Searching for this regex yields words that perfectly rhyme with "Candor".
 #+end_src
 
 #+RESULTS:
-:results:
+#+begin_example
 ("zander" "wicklander" "vandevander" "vander" "telander" "swartzlander"
  "subcommander" "standre" "stander" "stadtlander" "slander" "skenandore"
  "sjolander" "scalamandre" "santander" "sandor" "sander" "salamander"
@@ -356,7 +357,8 @@ Searching for this regex yields words that perfectly rhyme with "Candor".
  "highlander" "hander" "grander" "glander" "gerrymander" "gander" "evander"
  "coriander" "commander" "candor" "calamander" "bystander" "brander" "blander"
  "bander" "aulander" "ander" "alexander" "aleksandr" "aleksander")
-:end:
+
+#+end_example
 
 But, if all you're going to do is search for the generated regex, just use =find-metapattern=...
 
@@ -369,7 +371,7 @@ But, if all you're going to do is search for the generated regex, just use =find
 #+end_src
 
 #+RESULTS:
-:results:
+#+begin_example
 ("yerkey" "yerkes" "yaworski" "xerxes" "workweeks" "workweek" "worksheets"
  "worksheet" "tyburski" "twersky" "turski" "turnkey" "turkeys" "turkey's"
  "turkey" "swirsky" "swiderski" "sturkie" "stachurski" "sircy" "shirkey"
@@ -379,26 +381,30 @@ But, if all you're going to do is search for the generated regex, just use =find
  "gerski" "gerke" "figurski" "dworsky" "durkee" "burkley" "burkey" "burkeen"
  "birky" "birkey" "bertke" "berkley" "berklee" "berkey" "berkeley's" "berkeley"
  "anarchy" "aldercy" "albuquerque")
-:end:
+#+end_example
 
 =test-metapattern= just tests whether a metapattern holds over two words.
+
+Here, it does;
 
 #+begin_src lisp :exports both :results raw drawer
 (test-metapattern *dict* 'alliteration "Xenon" "Czar")
 #+end_src
 
 #+RESULTS:
-:results:
+#+begin_example
 (("Czar" #<PRONUNCIATION (Z AA R)>))
-:end:
+#+end_example
+
+And here, it does not;
 
 #+begin_src lisp :exports both :results raw drawer
 (test-metapattern *dict* 'perfect-rhyme "Wallet" "Stanford")
 #+end_src
 
 #+RESULTS:
-:results:
+#+begin_example
 NIL
-:end:
+#+end_example
 
 
