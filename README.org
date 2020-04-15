@@ -129,7 +129,42 @@ For vowel classes (the =@<,,>= pattern), three parameters may also be specified;
 - Second, backness
 - Third, roundedness
 
-This is still in progress.
+The first two of these categories are fairly fluid, and so are encoded as numbers. As with consonants, when multiple characters are supplied for a single parameter, the resulting matches are a union over those characters. That is, there's an implicit =OR= over your arguments.
+
+Vowel height arguments:
+| Character | Restricts Matches To |
+|-----------+----------------------|
+|         1 | Open                 |
+|         2 | Near Open            |
+|         3 | Open Mid             |
+|         4 | Mid                  |
+|         5 | Close Mid            |
+|         6 | Near Close           |
+|         7 | Close                |
+
+Vowel backness arguments:
+| Character | Restricts Matches To  |
+|-----------+-----------------------|
+|         1 | Front                 |
+|         2 | Central               |
+|         3 | Back                  |
+
+Vowel roundedness arguments:
+| Character | Restricts Matches To |
+|-----------+----------------------|
+| r         | Rounded              |
+| u         | Unrounded            |
+
+Examples:
+| Phoneme Class Definition | What it Matches                                                     |
+|--------------------------+---------------------------------------------------------------------|
+| =@=                      | All vowels                                                          |
+| =@<,,>=                  | All vowels                                                          |
+| =@<,,r>=                 | All rounded vowels                                                  |
+| =@<12,,u>=               | All vowels which are unrounded and either open or near open height. |
+| =@<,23>=                 | All vowels with either a central or back backness                   |
+
+Diphthongs and the r-colored phoneme, for now, are excluded whenever any restrictions are applied. They will only match a plain =@=, or, their associated phoneme literals.
 
 ** 🚧 Phonetic Metapatterns via Regular Expression Generators
 
@@ -138,10 +173,10 @@ Given a word and a meta-pattern, cl-phonetic can produce a phonetic regex implem
 Examples of Sylvia's current behavior:
 | Metapattern      | Input Word | Input Pronunciation | Output Regex     | Example Matching Words                      |
 |------------------+------------+---------------------+------------------+---------------------------------------------|
-| =:perfect-rhyme= | Clap       | =C L AE P=          | =.* AE P=        | Rap, Milsap, Trap, Nap                      |
-| =:near-rhyme=    | Clap       | =C L AE P=          | =.* AE #* P #*=  | Rap, Raps, Clasp, Milsap, Synapse, Trapped  |
-| =:vowel-match=   | Clap       | =C L AE P=          | =.* AE .*=       | Rad, Bad, Saturday, Clapper, Clap           |
-| =:vowel-match=   | Clapper    | =C L AE P ER=       | =.* AE #* ER .*= | Dapper, Transfer, Unilateral, Staffordshire |
+| ='perfect-rhyme= | Clap       | =C L AE P=          | =.* AE P=        | Rap, Milsap, Trap, Nap                      |
+| ='near-rhyme=    | Clap       | =C L AE P=          | =.* AE #* P #*=  | Rap, Raps, Clasp, Milsap, Synapse, Trapped  |
+| ='vowel-match=   | Clap       | =C L AE P=          | =.* AE .*=       | Rad, Bad, Saturday, Clapper, Clap           |
+| ='vowel-match=   | Clapper    | =C L AE P ER=       | =.* AE #* ER .*= | Dapper, Transfer, Unilateral, Staffordshire |
 
 One goal of cl-phonetic is to redefine "rhyme" and "near rhyme" to make better use of the properties of phonemes, potentially yielding more sensible results. For example, we could allow only unvoiced plosives between phonemes in =:near-rhyme=, rather than any consonant.
 
@@ -324,6 +359,30 @@ And the words ending with "AE T" that begin with a bilabial or labio-dental cons
 #+RESULTS:
 #+begin_example
 ("vat" "patt" "pat" "matte" "matt" "mat" "fat" "bhatt" "batte" "batt" "bat")
+#+end_example
+
+All single syllable words beginning with a "B" phoneme, a single vowel, and a "D".
+
+#+begin_src lisp :exports both :results raw drawer
+(the-words (regex-search *dict* "B @ D"))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+("byrd" "burd" "budde" "budd" "bud" "boyde" "boyd" "bowed" "booed" "bode"
+ "bird" "bide" "bid" "beede" "bede" "bed" "bead" "bayed" "bawd" "baud" "bade"
+ "bad" "baade")
+#+end_example
+
+The previous expression, restricted to vowels with a height between open and mid, inclusive.
+
+#+begin_src lisp :exports both :results raw drawer
+(the-words (regex-search *dict* "B @<1234,,> D"))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+("budde" "budd" "bud" "bed" "bawd" "baud" "bad" "baade")
 #+end_example
 
 ** Generating a phonetic regular expression
