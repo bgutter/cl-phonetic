@@ -45,7 +45,15 @@ with at least 50 or so following codes to spare.")
                            :accessor manner-of-articulation)))
 
 (defclass vowel (phoneme)
-  ())
+  ((height :initarg :height
+           :accessor height
+           :initform nil)
+   (backness :initarg :backness
+             :accessor backness
+             :initform nil)
+   (roundedness :initarg :roundedness
+                :accessor roundedness
+                :initform nil)))
 
 (let ((phoneme-counter 0))
   (defmethod initialize-instance :after ((p phoneme) &key name)
@@ -61,7 +69,18 @@ with at least 50 or so following codes to spare.")
   (code-char (encoded-value p)))
 
 (defparameter *phonemes*
-  (macrolet ((vowel (name)
+  (macrolet ((vowel (name height backness roundedness)
+               `(make-instance 'vowel
+                               :name ,name
+                               :type 'vowel
+                               :height ,height
+                               :backness ,backness
+                               :roundedness ,roundedness))
+             (diphthong (name)
+               `(make-instance 'vowel
+                               :name ,name
+                               :type 'vowel))
+             (r-colored (name)
                `(make-instance 'vowel
                                :name ,name
                                :type 'vowel))
@@ -73,45 +92,45 @@ with at least 50 or so following codes to spare.")
                                :place-of-articulation ,poa
                                :manner-of-articulation ,moa)))
     (list
-     (vowel     'AA)
-     (vowel     'AE)
-     (vowel     'AH)
-     (vowel     'AO)
-     (vowel     'AW)
-     (vowel     'AY)
-     (consonant 'B  'voiced   'bilabial      'plosive)
-     (consonant 'CH 'unvoiced 'post-alveolar 'affricate)
-     (consonant 'D  'voiced   'alveolar      'plosive)
-     (consonant 'DH 'voiced   'dental        'fricative)
-     (vowel     'EH)
-     (vowel     'ER)
-     (vowel     'EY)
-     (consonant 'F  'unvoiced 'labio-dental  'fricative)
-     (consonant 'G  'voiced   'velar         'plosive)
-     (consonant 'HH 'unvoiced 'glottal       'fricative)
-     (vowel     'IH)
-     (vowel     'IY)
-     (consonant 'JH 'voiced   'post-alveolar 'affricate)
-     (consonant 'K  'unvoiced 'velar         'plosive)
-     (consonant 'L  'voiced   'alveolar      'lateral)
-     (consonant 'M  'voiced   'bilabial      'nasal)
-     (consonant 'N  'voiced   'alveolar      'nasal)
-     (consonant 'NG 'voiced   'velar         'nasal)
-     (vowel     'OW)
-     (vowel     'OY)
-     (consonant 'P  'unvoiced 'bilabial      'plosive)
-     (consonant 'R  'voiced   'post-alveolar 'approximant)
-     (consonant 'S  'unvoiced 'alveolar      'fricative)
-     (consonant 'SH 'unvoiced 'post-alveolar 'fricative)
-     (consonant 'T  'unvoiced 'alveolar      'plosive)
-     (consonant 'TH 'unvoiced 'dental        'fricative)
-     (vowel     'UH)
-     (vowel     'UW)
-     (consonant 'V  'voiced   'labio-dental  'fricative)
-     (consonant 'W  'voiced   'bilabial      'approximant)
-     (consonant 'Y  'voiced   'palatal       'approximant)
-     (consonant 'Z  'voiced   'alveolar      'fricative)
-     (consonant 'ZH 'voiced   'post-alveolar 'fricative))))
+     (vowel     'AA 'open       'central       'unrounded)
+     (vowel     'AE 'near-open  'front         'unrounded)
+     (vowel     'AH 'near-open  'central       'any)
+     (vowel     'AO 'open-mid   'back          'rounded)
+     (diphthong 'AW)
+     (diphthong 'AY)
+     (consonant 'B  'voiced     'bilabial      'plosive)
+     (consonant 'CH 'unvoiced   'post-alveolar 'affricate)
+     (consonant 'D  'voiced     'alveolar      'plosive)
+     (consonant 'DH 'voiced     'dental        'fricative)
+     (vowel     'EH 'open-mid   'front         'unrounded)
+     (r-colored 'ER)
+     (diphthong 'EY)
+     (consonant 'F  'unvoiced   'labio-dental  'fricative)
+     (consonant 'G  'voiced     'velar         'plosive)
+     (consonant 'HH 'unvoiced   'glottal       'fricative)
+     (vowel     'IH 'near-close 'front         'unrounded)
+     (vowel     'IY 'close      'front         'unrounded)
+     (consonant 'JH 'voiced     'post-alveolar 'affricate)
+     (consonant 'K  'unvoiced   'velar         'plosive)
+     (consonant 'L  'voiced     'alveolar      'lateral)
+     (consonant 'M  'voiced     'bilabial      'nasal)
+     (consonant 'N  'voiced     'alveolar      'nasal)
+     (consonant 'NG 'voiced     'velar         'nasal)
+     (diphthong 'OW)
+     (diphthong 'OY)
+     (consonant 'P  'unvoiced   'bilabial      'plosive)
+     (consonant 'R  'voiced     'post-alveolar 'approximant)
+     (consonant 'S  'unvoiced   'alveolar      'fricative)
+     (consonant 'SH 'unvoiced   'post-alveolar 'fricative)
+     (consonant 'T  'unvoiced   'alveolar      'plosive)
+     (consonant 'TH 'unvoiced   'dental        'fricative)
+     (vowel     'UH 'near-close 'back          'rounded)
+     (vowel     'UW 'close      'back          'rounded)
+     (consonant 'V  'voiced     'labio-dental  'fricative)
+     (consonant 'W  'voiced     'bilabial      'approximant)
+     (consonant 'Y  'voiced     'palatal       'approximant)
+     (consonant 'Z  'voiced     'alveolar      'fricative)
+     (consonant 'ZH 'voiced     'post-alveolar 'fricative))))
 
 (defparameter *consonant-voiced-char-map*
   '((#\v . voiced)
@@ -135,6 +154,24 @@ with at least 50 or so following codes to spare.")
     (#\p . plosive)
     (#\x . approximant)))
 
+(defparameter *vowel-height-char-map*
+  '((#\1 . open)
+    (#\2 . near-open)
+    (#\3 . open-mid)
+    (#\4 . mid)
+    (#\5 . close-mid)
+    (#\6 . near-close)
+    (#\7 . close)))
+
+(defparameter *vowel-backness-char-map*
+  '((#\1 . front)
+    (#\2 . central)
+    (#\3 . back)))
+
+(defparameter *vowel-roundedness-char-map*
+  '((#\r . rounded)
+    (#\u . unrounded)))
+
 (defun encode-phonemes (pres)
   "Replace any phoneme literal sequences in PRES with their encoded values.
   TODO: This is fundamentally flawed -- may need to enforce whitespace delimiting of phoneme literals."
@@ -153,7 +190,7 @@ with at least 50 or so following codes to spare.")
         :test 'equal
         :key #'phoneme-representation))
 
-(defun query-phonemes (type &key voiced place-of-articulation manner-of-articulation)
+(defun query-phonemes (type &key voiced place-of-articulation manner-of-articulation height backness roundedness)
   "Return a list of all phonemes matching query. Each parameter can be
 either a single value to match, or a list thereof. Unprovided parameters are
 considered wildcards."
@@ -172,18 +209,39 @@ considered wildcards."
               (and
                (equal-if-applicable voiced (voiced-p phoneme))
                (equal-if-applicable place-of-articulation (place-of-articulation phoneme))
-               (equal-if-applicable manner-of-articulation (manner-of-articulation phoneme)))))))
+               (equal-if-applicable manner-of-articulation (manner-of-articulation phoneme))))
+          (or (equal 'consonant (phoneme-type phoneme))
+              (and
+               (equal-if-applicable height (height phoneme))
+               (equal-if-applicable backness (backness phoneme))
+               (equal-if-applicable roundedness (roundedness phoneme)))))))
 
     (remove-if-not #'matching-phoneme-p *phonemes*)))
 
-(defun expand-phoneme-expression/vowels (vowel-expstr)
+(defun expand-phoneme-expression/vowels (opts)
   "Replace a vowel expression with a Perl-compatible character class which implements it."
-  (declare (ignorable vowel-expstr))
-  ;; TODO
-  (apply #'concatenate `(string "[" ,@(mapcar
-                                       (cl-utilities:compose #'string #'encoded-char)
-                                       (query-phonemes 'vowel))
-                                "]")))
+  (destructuring-bind (&optional height-chars backness-chars roundedness-chars) opts
+    (flet
+        ((remap-char-generator (char-alist)
+           (lambda (char)
+             (let ((cns (assoc char char-alist)))
+               (if (null cns)
+                   (format t "TODO signal here")
+                   (cdr cns))))))
+      (let
+          ((height-list (mapcar (remap-char-generator *vowel-height-char-map*)
+                             height-chars))
+           (backness-list (mapcar (remap-char-generator *vowel-backness-char-map*)
+                             backness-chars))
+           (roundedness-list (mapcar (remap-char-generator *vowel-roundedness-char-map*)
+                           roundedness-chars)))
+        (apply #'concatenate `(string "[" ,@(mapcar
+                                             (cl-utilities:compose #'string #'encoded-char)
+                                             (query-phonemes 'vowel
+                                                             :backness backness-list
+                                                             :height height-list
+                                                             :roundedness roundedness-list))
+                                      "]"))))))
 
 (defun expand-phoneme-expression/consonants (opts)
   "Replace a consonant expression with a Perl-compatible character class which implements it."
@@ -224,7 +282,7 @@ considered wildcards."
 
 (defun encode-regex/phoneme-expressions (pres)
   "Replace consonant, vowel, and syllable expressions with encoded values."
-  (let ((expstr-scanner (ppcre:create-scanner "[@#%](?:<([a-zA-Z]*(?:,[a-zA-Z]*){0,3})>)?")))
+  (let ((expstr-scanner (ppcre:create-scanner "[@#%](?:<([a-zA-Z0-9]*(?:,[a-zA-Z0-9]*){0,3})>)?")))
     (loop while
          (multiple-value-bind (start stop)
              (ppcre:scan expstr-scanner pres)
@@ -343,10 +401,11 @@ going to match many, many words for virtually any input."
 
 ;; Dictionary Processing
 
-(defclass phonetic-dictionary ()
+(defclass simple-phonetic-dictionary ()
   ((words :initarg :words
           :accessor words
-          :initform (make-hash-table :test 'equal))))
+          :initform (make-hash-table :test 'equal)))
+  (:documentation "A simple hash-based phonetic dictionary."))
 
 (defgeneric regex-search (dict phonetic-regex)
   (:documentation "Find all words in this dict whose pronunciation matches the given phonetic regex"))
@@ -394,7 +453,7 @@ things and save it."
 (defun from-cmudict (path)
   "Read pronunciations in from a cmudict formatted text file."
   (let
-      ((new-dict (make-instance 'phonetic-dictionary)))
+      ((new-dict (make-instance 'simple-phonetic-dictionary)))
     (with-open-file (stream path :external-format :LATIN-1)
       (do ((line (read-line stream nil)
                  (read-line stream nil)))
@@ -411,11 +470,11 @@ things and save it."
              (learn-word new-dict word phonemes))))))
     new-dict))
 
-(defmethod pronounce-word ((dict phonetic-dictionary) dirty-word)
+(defmethod pronounce-word ((dict simple-phonetic-dictionary) dirty-word)
   "Get the phoneme sequences stored for this word."
   (gethash (normalize-word dirty-word) (words dict)))
 
-(defmethod regex-search ((dict phonetic-dictionary) pres)
+(defmethod regex-search ((dict simple-phonetic-dictionary) pres)
   "Return a list of words which have a pronunciation matching regex."
   (let* ((matcher (make-matcher pres))
          (results nil)
@@ -428,7 +487,7 @@ things and save it."
                  (words dict)))
     results))
 
-(defmethod find-metapattern ((dict phonetic-dictionary) metapattern word)
+(defmethod find-metapattern ((dict simple-phonetic-dictionary) metapattern word)
   "Find words in `dict' which satisfy an internally generated regular expression implementing the
 provided `metapattern' over `word'."
   (let*
@@ -436,7 +495,7 @@ provided `metapattern' over `word'."
        (regex (generate-regex metapattern first-pronunciation)))
     (regex-search dict regex)))
 
-(defmethod test-metapattern ((dict phonetic-dictionary) metapattern word-a word-b)
+(defmethod test-metapattern ((dict simple-phonetic-dictionary) metapattern word-a word-b)
   "Test whether metapattern `metapattern' for word `word-a' is held over word `word-b'.
 TODO: This is currently using the first pronunciation for `word-a' over any pronunciation
 for `word-b'. It should probably just be an any/any (cross-product) sort of thing."
