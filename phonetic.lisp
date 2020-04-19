@@ -405,32 +405,6 @@ encoded string representation for fast matching."
 
 ;; Regex Generation
 
-(defun generate-regex/near-rhyme (phonemes &rest ignored)
-  "Simple rhyme metapattern. This is currently defined to mean that every phoneme after
-the first vowel phoneme matches, but with extra consonants interspersed."
-  (declare (ignorable ignored))
-  (let*
-      ((first-vowel-pos (position-if (lambda (phoneme)
-                                     (eq (phoneme-type phoneme) 'vowel))
-                                   phonemes))
-       (first-vowel-to-end (subseq phonemes first-vowel-pos))
-       (representations (mapcar 'phoneme-representation first-vowel-to-end))
-       (consonants-added (seqjoin 'list representations " #* ")))
-    (apply 'concatenate 'string `(".* " ,@consonants-added " #*"))))
-
-(defun generate-regex/perfect-rhyme (phonemes &rest ignored)
-  "Exact rhyme metapattern. This is defined to mean that every phoneme after the first
-vowel phoneme matches exactly."
-  (declare (ignorable ignored))
-  (let*
-      ((first-vowel-pos (position-if (lambda (phoneme)
-                                     (eq (phoneme-type phoneme) 'vowel))
-                                   phonemes))
-       (first-vowel-to-end (subseq phonemes first-vowel-pos))
-       (representations (mapcar 'phoneme-representation first-vowel-to-end))
-       (spaces-added (seqjoin 'list representations " ")))
-    (apply 'concatenate 'string `(".* " ,@spaces-added))))
-
 (defun generate-regex/rhyme (phonemes &rest ignored &key loose)
   "Matches all words where every phoneme after the first vowel phoneme
 matches exactly.
