@@ -12,42 +12,6 @@
 
 (use-package 'cl-arrows)
 
-;; Utility
-
-(defmacro string-extract (str re names-list &rest body)
-  "Basically, `multiple-value-bind', but for CL-PPCRE capture groups.
-Scan STR with RE, binding NAMES-LIST to the resulting matches, and
-finally, evaluate BODY. Behavior is undefined if RE does not match
-STR, or if the number of capture groups is not equal to the number of
-names in NAMES-LIST."
-  (let ((whole-sym   (gensym))
-        (matches-sym (gensym)))
-    `(multiple-value-bind (,whole-sym ,matches-sym)
-         (ppcre:scan-to-strings ,re ,str)
-       (declare (ignore ,whole-sym))
-       (destructuring-bind ,names-list (coerce ,matches-sym 'list)
-         ,@body))))
-
-(defun insert (sequence element idx)
-  "Insert an element ELEMENT into SEQUENCE at index IDX."
-  (append (subseq sequence 0 idx)
-          (list element)
-          (subseq sequence idx)))
-
-(defun seqjoin (result-type sequence delimiter)
-  "Insert DELIMITER between every element in SEQUENCE."
-  (let
-      ((alternator 1))
-    (flet
-        ((merge-closure (elt-left elt-right)
-           "Yields an infinite series of nil, t, nil, t, ..."
-           (declare (ignorable elt-left elt-right))
-           (> (setq alternator (* alternator -1)) 0)))
-      (merge result-type
-             sequence
-             (make-list (- (length sequence) 1) :initial-element delimiter)
-             #'merge-closure))))
-
 ;; Phonemes & Encoding
 
 (defconstant +unicode-pua-base+ #x00E000
@@ -432,6 +396,13 @@ encoded string representation for fast matching."
     (make-instance 'pronunciation
                    :phoneme-stress-alist phoneme-stress-alist)))
 
+(defun join-pronunciations (&rest pronunciations)
+  "Return a combined `pronunciation'."
+  (make-instance 'pronunciation
+                 :phoneme-stress-alist (apply #'concatenate 'list
+                                              (mapcar #'phoneme-stress-alist
+                                                      pronunciations))))
+
 ;; Regex Generation
 
 (defun generate-regex/near-rhyme (phonemes &rest ignored)
@@ -554,6 +525,29 @@ things and save it."
          (pronunciation  (make-pronunciation clean-phonemes)))
     (setf (gethash clean-word (words dict)) (cons pronunciation entry))))
 
+;; utterance handling
+
+(defun tokenize-utterance (utterance)
+  "Split English text into sequence of normalized words."
+  (mapcar (lambda (wordlike)
+            (-<> wordlike
+                (ppcre:regex-replace-all "[^0-9a-zA-Z']" <> "")
+                (normalize-word)))
+          (ppcre:split "\\s+" utterance)))
+
+(defun pronounce-utterance (dict utterance)
+  "Return a `pronunciation' from UTTERANCE.
+UTTERANCE may be either a string of English text, or a list of
+tokenized words."
+  (let*
+      ((utt-tokens (if (listp utterance)
+                       utterance
+                       (tokenize-utterance utterance)))
+       (utt-pronunciations (mapcar (lambda (w)
+                                     (first (pronounce-word dict w)))
+                                   utt-tokens)))
+    (apply #'join-pronunciations (remove-if #'null utt-pronunciations))))
+
 ;; Glue
 
 (defun make-matcher (pres)
@@ -612,8 +606,10 @@ things and save it."
 expression implementing the provided METAPATTERN over WORD. Any
 additional arguments are forwarded to `GENERATE-REGEX'."
   (let*
-      ((first-pronunciation (first (pronounce-word dict word)))
-       (regex (apply #'generate-regex metapattern first-pronunciation generator-options)))
+      ((pronunciation (if (typep word 'pronunciation)
+                          word
+                          (first (pronounce-word dict word))))
+       (regex         (apply #'generate-regex metapattern pronunciation generator-options)))
     (regex-search dict regex)))
 
 (defmethod test-metapattern ((dict simple-phonetic-dictionary) metapattern word-a word-b)
