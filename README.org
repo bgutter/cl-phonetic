@@ -75,6 +75,12 @@ This library is intended to replace the [[https://github.com/bgutter/sylvia][Syl
   (the-words (find-metapattern dict 'alliteration "phone"))
   ;; Words with alliteration agaisnt "phone"
   ;; ( ... "foam" "phoning" "fairway" "philistine" ...)
+
+  (pronounce-utterance dict "Eat it!")
+  ;; #<PRONUNCIATION IY T IH T>
+
+  (the-words (find-metapattern dict 'rhyme (pronounce-utterance dict "Eat it!") :loose t))
+  ;; ("restricts" "restrict" "elitists" "elitist" "defeatist" "betwixt")
   )
 #+end_src
 
