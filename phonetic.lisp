@@ -460,6 +460,20 @@ vowel phoneme matches exactly."
 going to match many, many words for virtually any input."
   (concatenate 'string (phoneme-representation (first phonemes)) " .* "))
 
+(defun generate-regex/assonance (phonemes)
+  "Matches all words which contain the same vowels, with any consonants intermixed."
+  (apply #'concatenate 'string
+               `("#*"
+                 ,@(seqjoin 'list (mapcar #'phoneme-representation (remove-if-not #'vowel-p phonemes)) "#*")
+                 "#*")))
+
+(defun generate-regex/consonance (phonemes)
+  "Matches all words which contain all the same consonant phonemes, with any vowels intermixed."
+  (apply #'concatenate 'string
+               `("@*"
+                 ,@(seqjoin 'list (mapcar #'phoneme-representation (remove-if-not #'consonant-p phonemes)) "@*")
+                 "@*")))
+
 (defun generate-regex (metapattern pronunciation)
   "Return an unencoded phonetic regex which implements METAPATTERN over
 PRONUNCIATION."
@@ -469,6 +483,8 @@ PRONUNCIATION."
     (case metapattern
       (perfect-rhyme (generate-regex/perfect-rhyme phonemes))
       (near-rhyme    (generate-regex/near-rhyme phonemes))
+      (assonance     (generate-regex/assonance phonemes))
+      (consonance    (generate-regex/consonance phonemes))
       (alliteration  (generate-regex/alliteration phonemes)))))
 
 ;; Dictionary Processing
