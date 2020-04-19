@@ -406,8 +406,11 @@ plain Jane CL-PPCRE square-bracket expressions."
   "When a `PRONUNCIATION' object is printed, print the textual
 representation of each of its phonemes."
   (print-unreadable-object (pr out :type t)
-    (format out "~A" (mapcar (cl-utilities:compose #'phoneme-representation #'car)
-                             (phoneme-stress-alist pr)))))
+    (format out "~A" (apply #'concatenate 'string
+                            (seqjoin 'list
+                                     (mapcar (cl-utilities:compose #'phoneme-representation #'car)
+                                             (phoneme-stress-alist pr))
+                                     " ")))))
 
 (defmethod initialize-instance :after ((pr pronunciation) &rest ignored)
   "After each `PRONUNCIATION' is created, automatically compile its

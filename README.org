@@ -4,6 +4,80 @@ A phonetic pattern matching library for Common Lisp.
 
 This library is intended to replace the [[https://github.com/bgutter/sylvia][Sylvia library]] for Python.
 
+* The Short Version
+
+#+begin_src lisp
+(let
+    ((dict (from-cmudict "./cmudict")))
+
+  (pronounce-word dict "tomato")
+  ;; (#<PRONUNCIATION T AH M AA T OW> #<PRONUNCIATION T AH M EY T OW>)
+
+  (regex-search dict "P .* EY T OW #+")
+  ;; Words starting with the P sound, followed by anything, and ending with the
+  ;; EY T OW sequence, plus at least one more consonant.
+  ;; (("potatoes" #<PRONUNCIATION P AH T EY T OW Z>)
+  ;;  ("plato's" #<PRONUNCIATION P L EY T OW Z>))
+
+  (regex-search dict "#<v,,f> %% NG")
+  ;; Two syllable words beginning with a voiced fricative and ending with NG
+  ;; (("zooming" #<PRONUNCIATION Z UW M IH NG>)
+  ;;  ("zapping" #<PRONUNCIATION Z AE P IH NG>)
+  ;;  ("voicing" #<PRONUNCIATION V OY S IH NG>)
+  ;;  ("vesting" #<PRONUNCIATION V EH S T IH NG>)
+  ;;  ...
+
+  (generate-regex 'rhyme (first (pronounce-word dict "roses")))
+  ;; ".* OW Z IH Z "
+
+  (generate-regex 'rhyme (first (pronounce-word dict "roses")) :loose t)
+  ;; ".* OW #* Z #* IH #* Z #* "
+
+  (the-words (find-metapattern dict 'rhyme "roses"))
+  ;; Words that perfectly rhyme with "roses"
+  ;; ("supposes" "roses" "rose's" "proposes" "primroses" "presupposes" "poses"
+  ;;  "overexposes" "opposes" "noses" "juxtaposes" "imposes" "hoses" "forecloses"
+  ;;  "exposes" "dozes" "disposes" "discloses" "decomposes" "composes" "closes"
+  ;;  "bulldozes")
+
+  (the-words (find-metapattern dict 'rhyme "roses" :loose t))
+  ;; Words that loosely or perfectly rhyme with "roses"
+  ;; ("supposes" "roses" "rose's" "rolls's" "proposes" "primroses" "presupposes"
+  ;;  "poses" "overexposes" "opposes" "noses" "juxtaposes" "joneses" "jones's"
+  ;;  "imposes" "hoses" "holmes's" "forecloses" "exposes" "dozes" "doles's"
+  ;;  "disposes" "discloses" "decomposes" "composes" "closings" "closes" "bulldozes")
+
+  (the-words (find-metapattern dict 'consonance "babble"))
+  ;; Words with consonance against "babble"
+  ;; ("burble" "bubel" "bubbly" "bubble" "bobble" "biebel" "bibler" "bible" "bauble"
+  ;;  "babula" "babler" "babel" "babbler" "babble")
+
+  (the-words (find-metapattern dict 'consonance "babble" :loose t))
+  ;; Words with a loose consonance against "babble"
+  ;; ("obtainable" "observable" "objectionable" "butterball" "burnable" "burble"
+  ;;  "bumbly" "bumble" "bumbalough" "buildable" "bubel" "bubbly" "bubble"
+  ;;  "brumbelow" "brightbill" "brechbill" "breakable" "bramble" "brambila"
+  ;;  "brakebill" "brackbill" "botshabelo" "bookmobile" "bonnibelle" "bonnibel"
+  ;;  "bobble" "bobadilla" "bluebottle" "bluebell" "blankenbeckler" "blackball"
+  ;;  "biodegradable" "billable" "biebel" "biddable" "biblical" "bibler" "bible"
+  ;;  "berkebile" "believable" "bearably" "bearable" "beachball" "bauble"
+  ;;  "basketball" "baseball" "barboursville" "barbella" "barbell" "barbanel"
+  ;;  "barbagallo" "bankable" "babula" "babler" "babel" "babbler" "babble"
+  ;;  "abominable")
+
+  (the-words (find-metapattern dict 'assonance "ivanhoe"))
+  ;; Words with assonance against "ivanhoe"
+  ;; ("zydeco" "xylophone" "virazole" "styrofoam" "microscopes" "microscope"
+  ;;  "microphone" "kayapo" "ivanhoe" "ivaco" "isotopes" "isotope" "isentrope"
+  ;;  "idaho's" "idaho" "gyroscopes" "gyroscope" "dynamo" "dialtone" "diagnosed"
+  ;;  "diagnose" "cyclostomes" "cyclostome")
+
+  (the-words (find-metapattern dict 'alliteration "phone"))
+  ;; Words with alliteration agaisnt "phone"
+  ;; ( ... "foam" "phoning" "fairway" "philistine" ...)
+  )
+#+end_src
+
 * Features
 
 This library is in-progress, and each feature is at varying degrees of readiness.
