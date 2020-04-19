@@ -8,10 +8,18 @@
 
 (ql:quickload 'cl-ppcre)
 (ql:quickload 'cl-utilities)
+(ql:quickload 'cl-arrows)
+
+(use-package 'cl-arrows)
 
 ;; Utility
 
 (defmacro string-extract (str re names-list &rest body)
+  "Basically, `multiple-value-bind', but for CL-PPCRE capture groups.
+Scan STR with RE, binding NAMES-LIST to the resulting matches, and
+finally, evaluate BODY. Behavior is undefined if RE does not match
+STR, or if the number of capture groups is not equal to the number of
+names in NAMES-LIST."
   (let ((whole-sym   (gensym))
         (matches-sym (gensym)))
     `(multiple-value-bind (,whole-sym ,matches-sym)
@@ -20,11 +28,36 @@
        (destructuring-bind ,names-list (coerce ,matches-sym 'list)
          ,@body))))
 
+(defun insert (sequence element idx)
+  "Insert an element ELEMENT into SEQUENCE at index IDX."
+  (append (subseq sequence 0 idx)
+          (list element)
+          (subseq sequence idx)))
+
+(defun seqjoin (result-type sequence delimiter)
+  "Insert DELIMITER between every element in SEQUENCE."
+  (let
+      ((alternator 1))
+    (flet
+        ((merge-closure (elt-left elt-right)
+           "Yields an infinite series of nil, t, nil, t, ..."
+           (declare (ignorable elt-left elt-right))
+           (> (setq alternator (* alternator -1)) 0)))
+      (merge result-type
+             sequence
+             (make-list (- (length sequence) 1) :initial-element delimiter)
+             #'merge-closure))))
+
 ;; Phonemes & Encoding
 
 (defconstant +unicode-pua-base+ #x00E000
-  "This is where we start encoding phoneme characters. Should be within the Unicode Private Use Area,
-with at least 50 or so following codes to spare.")
+  "The first unicode value where encoded phonemes will be defined.
+Currently, pattern matching is done by the CL-PPCRE package. This is
+accomplished by masquerading phonemes as unicode characters. We map
+phonemes to characters in the Unicode Private Use Area to help ensure
+that malformed input regular expressions are consistently and
+obviously broken. There should be enough space here to fit all English
+phonemes.")
 
 (defclass phoneme ()
   ((name :initarg :name
@@ -34,7 +67,18 @@ with at least 50 or so following codes to spare.")
    (representation :initarg :representation
                    :accessor phoneme-representation)
    (encoded-value :initarg :encoded-value
-                  :accessor encoded-value)))
+                  :accessor encoded-value))
+  (:documentation
+   "Represents an English phoneme, including its textual
+  representation, and CL-PPCRE encoded representation."))
+
+(defun vowel-p (phoneme)
+  "Is this `phoneme' object a vowel?"
+  (equal 'vowel (phoneme-type phoneme)))
+
+(defun consonant-p (phoneme)
+  "Is this `phoneme' object a consonant?"
+  (equal 'consonant (phoneme-type phoneme)))
 
 (defclass consonant (phoneme)
   ((voiced :initarg :voiced
@@ -42,7 +86,11 @@ with at least 50 or so following codes to spare.")
    (place-of-articulation :initarg :place-of-articulation
                           :accessor place-of-articulation)
    (manner-of-articulation :initarg :manner-of-articulation
-                           :accessor manner-of-articulation)))
+                           :accessor manner-of-articulation))
+  (:documentation
+   "A specialization of `phoneme' to represent English consonants,
+   including information about their voicing, place of articulation,
+   and manner of articulation."))
 
 (defclass vowel (phoneme)
   ((height :initarg :height
@@ -53,8 +101,19 @@ with at least 50 or so following codes to spare.")
              :initform nil)
    (roundedness :initarg :roundedness
                 :accessor roundedness
-                :initform nil)))
+                :initform nil))
+  (:documentation
+   "A specialization of `phoneme' to represent English vowels,
+   including information about their height, backness, and
+   roundedness."))
 
+;;
+;; After initialization of any phoneme
+;;   1. Generate a unique encoding value and store it in the
+;;      encoded-value slot.
+;;   2. Fill the representation slot as the name of the symbol
+;;      supplied for NAME.
+;;
 (let ((phoneme-counter 0))
   (defmethod initialize-instance :after ((p phoneme) &key name)
              (setf (encoded-value p) (+ +unicode-pua-base+ phoneme-counter))
@@ -62,10 +121,13 @@ with at least 50 or so following codes to spare.")
              (setf phoneme-counter (1+ phoneme-counter))))
 
 (defmethod print-object ((p phoneme) out)
+  "When a phoneme is printed, print its textual representation."
   (print-unreadable-object (p out :type t)
     (format out "~A" (phoneme-representation p))))
 
 (defmethod encoded-char ((p phoneme))
+  "Return a character whose Unicode value is the encoding value of the
+given `phoneme' object PHONEME."
   (code-char (encoded-value p)))
 
 (defparameter *phonemes*
@@ -130,11 +192,14 @@ with at least 50 or so following codes to spare.")
      (consonant 'W  'voiced     'bilabial      'approximant)
      (consonant 'Y  'voiced     'palatal       'approximant)
      (consonant 'Z  'voiced     'alveolar      'fricative)
-     (consonant 'ZH 'voiced     'post-alveolar 'fricative))))
+     (consonant 'ZH 'voiced     'post-alveolar 'fricative)))
+  "Global table of `phoneme' objects. Represents the entirety of
+  ARPABET.")
 
 (defparameter *consonant-voiced-char-map*
   '((#\v . voiced)
-    (#\u . unvoiced)))
+    (#\u . unvoiced))
+  "Maps consonant-class voicing characters to their symbols.")
 
 (defparameter *consonant-poa-char-map*
   '((#\a . alveolar)
@@ -144,7 +209,9 @@ with at least 50 or so following codes to spare.")
     (#\l . labio-dental)
     (#\p . post-alveolar)
     (#\t . palatal)
-    (#\v . velar)))
+    (#\v . velar))
+  "Maps consonant-class place-of-articulation characters to their
+  symbols.")
 
 (defparameter *consonant-moa-char-map*
   '((#\a . affricate)
@@ -152,7 +219,9 @@ with at least 50 or so following codes to spare.")
     (#\l . lateral)
     (#\n . nasal)
     (#\p . plosive)
-    (#\x . approximant)))
+    (#\x . approximant))
+  "Maps consonant-class manner-of-articulation characters to their
+  symbols.")
 
 (defparameter *vowel-height-char-map*
   '((#\1 . open)
@@ -161,127 +230,142 @@ with at least 50 or so following codes to spare.")
     (#\4 . mid)
     (#\5 . close-mid)
     (#\6 . near-close)
-    (#\7 . close)))
+    (#\7 . close))
+  "Maps vowel-class height characters to their symbols.")
 
 (defparameter *vowel-backness-char-map*
   '((#\1 . front)
     (#\2 . central)
-    (#\3 . back)))
+    (#\3 . back))
+  "Maps vowel-class backness characters to their symbols.")
 
 (defparameter *vowel-roundedness-char-map*
   '((#\r . rounded)
-    (#\u . unrounded)))
+    (#\u . unrounded))
+  "Maps vowel-class roundedness characters to their symbols.")
 
-(defun encode-phonemes (pres)
-  "Replace any phoneme literal sequences in PRES with their encoded values.
-  TODO: This is fundamentally flawed -- may need to enforce whitespace delimiting of phoneme literals."
-  (reduce (lambda (str p)
+(defun encode-phonemes (phonemic-regex-string)
+  "Given a phoneme regular expression string, replace every phoneme
+literal with its CL-PPCRE encoded character, and return the result.
+
+For example, if PHONEME-REGEX-STRING is something like \"K AE T\",
+then the returned string will be only 5 characters long; 3
+encoded (and possibly unprintable) characters joined by the remaining
+two spaces.
+
+Note that behavior is undefined (and frankly broken) if consecutive
+phoneme literals are not separated by whitespace."
+  (reduce (lambda (str phoneme)
             (ppcre:regex-replace-all
-             (concatenate 'string (phoneme-representation p) "(?=([^a-zA-Z]|$))") ; Prevent ambiguity by checking boundaries
+             (concatenate 'string (phoneme-representation phoneme) "(?=([^a-zA-Z]|$))") ; Prevent ambiguity by checking boundaries
              str
-             (string (encoded-char p))))
+             (string (encoded-char phoneme))))
           (sort *phonemes* #'> :key (lambda (entry) (length (phoneme-representation entry)))) ;; TODO HACK! Prevent misparsing
-          :initial-value pres))
+          :initial-value phonemic-regex-string))
 
 (defun get-phoneme-by-name (phoneme-str)
-  "Return a phoneme instance from *phonemes* given something like \"AE\""
+  "Return a `phoneme' object from `*phonemes*' given something like \"AE\""
   (find phoneme-str
         *phonemes*
         :test 'equal
         :key #'phoneme-representation))
 
-(defun query-phonemes (type &key voiced place-of-articulation manner-of-articulation height backness roundedness)
-  "Return a list of all phonemes matching query. Each parameter can be
-either a single value to match, or a list thereof. Unprovided parameters are
-considered wildcards."
+(defun query-phonemes (type &key q-voiced q-poa q-moa q-height q-backness q-roundedness)
+  "Filter the global `*phonemes*' list and return the result.
+
+Parameter TYPE should be either 'VOWEL or 'CONSONANT.
+
+Parameters Q-VOICED, Q-POA, and Q-MOA are only applicable when TYPE is
+'CONSONANT, while Q-HEIGHT, Q-BACKNESS, and Q-ROUNDEDNESS are
+applicable only when TYPE is 'VOWEL. All of these parameters may be
+omitted or nil, in which case they will not be used for filtering. If
+they are supplied with list values, then filtering will preserve only
+phonemes whose relevant properties are in the supplied lists. For any
+other parameter value, filtering will preserve only phonemes whose
+relevant properties are `EQUAL' to the supplied value.
+
+Return a list of all phonemes matching query. Each parameter can be
+either a single value to match, or a list thereof. Unprovided
+parameters are considered wildcards."
   (labels
 
-      ((equal-if-applicable (param against)
-         (or (not param)
-             (if (listp param)
-                 (member against param :test #'equal)
-                 (equal param against))))
+      ((phoneme-prop-fits-query-props (query-props phoneme-prop)
+         (cond
+           ((null query-props)  t)
+           ((listp query-props) (member phoneme-prop query-props :test #'equal))
+           (t                   (equal query-props phoneme-prop))))
 
        (matching-phoneme-p (phoneme)
          (and
           (equal type (phoneme-type phoneme))
-          (or (equal 'vowel (phoneme-type phoneme))
+          (or (vowel-p phoneme)
               (and
-               (equal-if-applicable voiced (voiced-p phoneme))
-               (equal-if-applicable place-of-articulation (place-of-articulation phoneme))
-               (equal-if-applicable manner-of-articulation (manner-of-articulation phoneme))))
-          (or (equal 'consonant (phoneme-type phoneme))
+               (phoneme-prop-fits-query-props q-voiced (voiced-p phoneme))
+               (phoneme-prop-fits-query-props q-moa (manner-of-articulation phoneme))
+               (phoneme-prop-fits-query-props q-poa (place-of-articulation phoneme))))
+          (or (consonant-p phoneme)
               (and
-               (equal-if-applicable height (height phoneme))
-               (equal-if-applicable backness (backness phoneme))
-               (equal-if-applicable roundedness (roundedness phoneme)))))))
+               (phoneme-prop-fits-query-props q-height (height phoneme))
+               (phoneme-prop-fits-query-props q-backness (backness phoneme))
+               (phoneme-prop-fits-query-props q-roundedness (roundedness phoneme)))))))
 
     (remove-if-not #'matching-phoneme-p *phonemes*)))
 
-(defun expand-phoneme-expression/vowels (opts)
-  "Replace a vowel expression with a Perl-compatible character class which implements it."
-  (destructuring-bind (&optional height-chars backness-chars roundedness-chars) opts
-    (flet
-        ((remap-char-generator (char-alist)
-           (lambda (char)
-             (let ((cns (assoc char char-alist)))
-               (if (null cns)
-                   (format t "TODO signal here")
-                   (cdr cns))))))
-      (let
-          ((height-list (mapcar (remap-char-generator *vowel-height-char-map*)
-                             height-chars))
-           (backness-list (mapcar (remap-char-generator *vowel-backness-char-map*)
-                             backness-chars))
-           (roundedness-list (mapcar (remap-char-generator *vowel-roundedness-char-map*)
-                           roundedness-chars)))
-        (apply #'concatenate `(string "[" ,@(mapcar
-                                             (cl-utilities:compose #'string #'encoded-char)
-                                             (query-phonemes 'vowel
-                                                             :backness backness-list
-                                                             :height height-list
-                                                             :roundedness roundedness-list))
-                                      "]"))))))
+(defun lookup-phoneme-class-chars (supplied-char-list char-mapping-alist)
+  "Given a list of chars representing an argument to a phoneme
+class (like #\v in \"#<v,,>\", etc), return their associated
+symbols (like 'voiced, 'plosive, 'open-mid, etc)."
+  (mapcar (lambda (char)
+            (let
+                ((sym-pair (assoc char char-mapping-alist)))
+              (if (null sym-pair)
+                  (error "Cannot find mapping for character ~A!" char)
+                  (cdr sym-pair))))
+          supplied-char-list))
 
-(defun expand-phoneme-expression/consonants (opts)
-  "Replace a consonant expression with a Perl-compatible character class which implements it."
-  (destructuring-bind (&optional voiced-chars poa-chars moa-chars) opts
-    (flet
-        ((remap-char-generator (char-alist)
-           (lambda (char)
-             (let ((cns (assoc char char-alist)))
-               (if (null cns)
-                   (format t "TODO signal here")
-                   (cdr cns))))))
-      (let
-          ((moa-list (mapcar (remap-char-generator *consonant-moa-char-map*)
-                             moa-chars))
-           (poa-list (mapcar (remap-char-generator *consonant-poa-char-map*)
-                             poa-chars))
-           (voiced (mapcar (remap-char-generator *consonant-voiced-char-map*)
-                           voiced-chars)))
-        (apply #'concatenate `(string "[" ,@(mapcar
-                                             (cl-utilities:compose #'string #'encoded-char)
-                                             (query-phonemes 'consonant
-                                                             :place-of-articulation poa-list
-                                                             :manner-of-articulation moa-list
-                                                             :voiced voiced))
-                                      "]"))))))
+(defun compile-phoneme-charclass (phoneme-list)
+  "Return a string which contains a CL-PPCRE square-bracket
+expression, whose contained characters are the encoded-character
+representations of the phonemes in PHONEME-LIST."
+  (let*
+      ((phoneme-encoded-strs (mapcar (cl-utilities:compose #'string #'encoded-char) phoneme-list))
+       (encoded-chars-string (apply #'concatenate `(string ,@phoneme-encoded-strs))))
+    (concatenate 'string "[" encoded-chars-string "]")))
+
+(defun expand-phoneme-expression/vowels (&optional height-chars backness-chars roundedness-chars)
+  "Given the char arguments to a \"@<,,>\" expression, return an
+encoded regex string to match those phonemes."
+  (compile-phoneme-charclass
+   (query-phonemes 'vowel
+                   :height      (lookup-phoneme-class-chars height-chars      *vowel-height-char-map*)
+                   :backness    (lookup-phoneme-class-chars backness-chars    *vowel-backness-char-map*)
+                   :roundedness (lookup-phoneme-class-chars roundedness-chars *vowel-roundedness-char-map*))))
+
+(defun expand-phoneme-expression/consonants (&optional voiced-chars poa-chars moa-chars)
+  "Given the char arguments to a \"#<,,>\" expression, return an
+encoded regex string to match those phonemes."
+  (compile-phoneme-charclass
+   (query-phonemes 'consonant
+                   :voiced                 (lookup-phoneme-class-chars voiced-chars *consonant-voiced-char-map*)
+                   :manner-of-articulation (lookup-phoneme-class-chars moa-chars    *consonant-moa-char-map*)
+                   :place-of-articulation  (lookup-phoneme-class-chars poa-chars    *consonant-poa-char-map*))))
 
 (defun expand-phoneme-expression (expstr)
-  "Convert something like @<v,,p> to [...encoded phonemes...]"
-  (let ((opts (if (>= (length expstr) 3)
-                  (mapcar (lambda (str) (coerce str 'list))
-                   (cl-utilities:split-sequence #\, (subseq expstr 2 (- (length expstr) 1))))
-                  nil)))
+  "Process a single phoneme-class expression, such as \"@\",
+\"@<,2,>\", \"%\", or \"#<>\". Returns an encoded regex string."
+  (let ((phoneme-class-option-chars
+          (and (>= (length expstr) 3)
+               (mapcar (lambda (str) (coerce str 'list))
+                       (cl-utilities:split-sequence #\, (subseq expstr 2 (- (length expstr) 1)))))))
     (case (aref expstr 0)
-      (#\@ (expand-phoneme-expression/vowels opts))
-      (#\# (expand-phoneme-expression/consonants opts))
+      (#\@ (apply #'expand-phoneme-expression/vowels phoneme-class-option-chars))
+      (#\# (apply #'expand-phoneme-expression/consonants phoneme-class-option-chars))
       (#\% " (?:#*@#*) ")
-      (t (error 'simple-error "Invalid phoneme expression string.")))))
+      (t (error "Invalid phoneme expression string: ~A." expstr)))))
 
 (defun encode-regex/phoneme-expressions (pres)
-  "Replace consonant, vowel, and syllable expressions with encoded values."
+  "Find and replace all consonant and vowel class expressions with
+plain Jane CL-PPCRE square-bracket expressions."
   (let ((expstr-scanner (ppcre:create-scanner "[@#%](?:<([a-zA-Z0-9]*(?:,[a-zA-Z0-9]*){0,3})>)?")))
     (loop while
          (multiple-value-bind (start stop)
@@ -290,8 +374,7 @@ considered wildcards."
                (setf pres (concatenate 'string
                                        (subseq pres 0 start)
                                        (expand-phoneme-expression (subseq pres start stop))
-                                       (subseq pres stop)))
-               nil)))
+                                       (subseq pres stop))))))
     pres))
 
 (defun encode-regex/phoneme-literals (pres)
@@ -302,8 +385,10 @@ considered wildcards."
   "Return a fully-encoded version of the given string."
   (concatenate 'string
                "^"
-               (remove #\ (encode-regex/phoneme-expressions
-                           (encode-regex/phoneme-literals pres)))
+               (-<> pres
+                    (encode-regex/phoneme-literals)
+                    (encode-regex/phoneme-expressions)
+                    (remove #\  <>))
                "$"))
 
 ;; Pronunciations
@@ -311,53 +396,40 @@ considered wildcards."
 (defclass pronunciation ()
     ((phoneme-stress-alist :initarg :phoneme-stress-alist
                            :accessor phoneme-stress-alist)
-     (encoded-str :accessor encoded-str)))
+     (encoded-str :accessor encoded-str))
+  (:documentation
+   "Represents a pronunciation; a sequence of phonemes and
+   stresses. Includes a slot to cache a string which is a sequence of
+   the character encodings of each phoneme in the pronunciation."))
 
 (defmethod print-object ((pr pronunciation) out)
+  "When a `PRONUNCIATION' object is printed, print the textual
+representation of each of its phonemes."
   (print-unreadable-object (pr out :type t)
     (format out "~A" (mapcar (cl-utilities:compose #'phoneme-representation #'car)
-                      (phoneme-stress-alist pr)))))
+                             (phoneme-stress-alist pr)))))
 
 (defmethod initialize-instance :after ((pr pronunciation) &rest ignored)
-  "Render the encoded version."
+  "After each `PRONUNCIATION' is created, automatically compile its
+encoded string representation for fast matching."
   (declare (ignore ignored))
   (setf (encoded-str pr)
         (coerce (mapcar (cl-utilities:compose #'encoded-char #'car) (phoneme-stress-alist pr))
                 'string)))
 
 (defun make-pronunciation (phoneme-strings)
-  "Given '(\"K\" \"AE1\" \"T\"), yield a pronunciation instance."
-  (make-instance 'pronunciation :phoneme-stress-alist
-                      (mapcar (lambda (phoneme-stress-str)
-                                (string-extract phoneme-stress-str
-                                                "([a-zA-Z]+)(\\d)?"
-                                                (phoneme-str stress-str)
-                                                (cons
-                                                 (get-phoneme-by-name phoneme-str)
-                                                 (and stress-str (parse-integer stress-str)))))
-                              phoneme-strings)))
+  "Given a list of phoneme literal strings, like '(\"K\" \"AE1\"
+\"T\"), yield a `PRONUNCIATION' object."
+  (let
+      ((phoneme-stress-alist (mapcar (lambda (phoneme-stress-str)
+                                       (string-extract phoneme-stress-str "([a-zA-Z]+)(\\d)?" (phoneme-str stress-str)
+                                                       (cons (get-phoneme-by-name phoneme-str)
+                                                             (and stress-str (parse-integer stress-str)))))
+                                     phoneme-strings)))
+    (make-instance 'pronunciation
+                   :phoneme-stress-alist phoneme-stress-alist)))
 
 ;; Regex Generation
-
-(defun insert (sequence element idx)
-  "Insert an element `element' into `sequence' at index `idx'."
-  (append (subseq sequence 0 idx)
-          (list element)
-          (subseq sequence idx)))
-
-(defun seqjoin (result-type sequence delimiter)
-  "Insert delimiter between every element in sequence."
-  (let
-      ((alternator 1))
-    (flet
-        ((merge-closure (elt-left elt-right)
-           "Yields an infinite series of nil, t, nil, t, ..."
-           (declare (ignorable elt-left elt-right))
-           (> (setq alternator (* alternator -1)) 0)))
-      (merge result-type
-             sequence
-             (make-list (- (length sequence) 1) :initial-element delimiter)
-             #'merge-closure))))
 
 (defun generate-regex/near-rhyme (phonemes)
   "Simple rhyme metapattern. This is currently defined to mean that every phoneme after
@@ -389,8 +461,8 @@ going to match many, many words for virtually any input."
   (concatenate 'string (phoneme-representation (first phonemes)) " .* "))
 
 (defun generate-regex (metapattern pronunciation)
-  "Return an unencoded phonetic regex which implements `metapattern' over
-`pronunciation'."
+  "Return an unencoded phonetic regex which implements METAPATTERN over
+PRONUNCIATION."
   (let*
       ((phonemes-stresses (phoneme-stress-alist pronunciation))
        (phonemes          (mapcar #'car phonemes-stresses)))
@@ -422,7 +494,7 @@ going to match many, many words for virtually any input."
                    (and index (parse-integer index)))))
 
 (defun normalize-phoneme (dirty-phoneme)
-  "Maps Ah to AH"
+  "Fix case, and potentially other cleanup."
   (string-upcase dirty-phoneme))
 
 (defun learn-word (dict word phonemes)
@@ -488,17 +560,18 @@ things and save it."
     results))
 
 (defmethod find-metapattern ((dict simple-phonetic-dictionary) metapattern word)
-  "Find words in `dict' which satisfy an internally generated regular expression implementing the
-provided `metapattern' over `word'."
+  "Find words in DICT which satisfy an internally generated regular
+expression implementing the provided METAPATTERN over WORD."
   (let*
       ((first-pronunciation (first (pronounce-word dict word)))
        (regex (generate-regex metapattern first-pronunciation)))
     (regex-search dict regex)))
 
 (defmethod test-metapattern ((dict simple-phonetic-dictionary) metapattern word-a word-b)
-  "Test whether metapattern `metapattern' for word `word-a' is held over word `word-b'.
-TODO: This is currently using the first pronunciation for `word-a' over any pronunciation
-for `word-b'. It should probably just be an any/any (cross-product) sort of thing."
+  "Test whether METAPATTERN for word WORD-A is held over word WORD-B.
+TODO: This is currently using the first pronunciation for WORD-A over
+any pronunciation for WORD-B. It should probably just be an
+any/any (cross-product) sort of thing."
   (let*
       ((first-pronunciation-a (first (pronounce-word dict word-a)))
        (pronunciations-b      (pronounce-word dict word-b))
