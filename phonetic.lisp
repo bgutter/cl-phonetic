@@ -431,9 +431,10 @@ encoded string representation for fast matching."
 
 ;; Regex Generation
 
-(defun generate-regex/near-rhyme (phonemes)
+(defun generate-regex/near-rhyme (phonemes &rest ignored)
   "Simple rhyme metapattern. This is currently defined to mean that every phoneme after
 the first vowel phoneme matches, but with extra consonants interspersed."
+  (declare (ignorable ignored))
   (let*
       ((first-vowel-pos (position-if (lambda (phoneme)
                                      (eq (phoneme-type phoneme) 'vowel))
@@ -443,9 +444,10 @@ the first vowel phoneme matches, but with extra consonants interspersed."
        (consonants-added (seqjoin 'list representations " #* ")))
     (apply 'concatenate 'string `(".* " ,@consonants-added " #*"))))
 
-(defun generate-regex/perfect-rhyme (phonemes)
+(defun generate-regex/perfect-rhyme (phonemes &rest ignored)
   "Exact rhyme metapattern. This is defined to mean that every phoneme after the first
 vowel phoneme matches exactly."
+  (declare (ignorable ignored))
   (let*
       ((first-vowel-pos (position-if (lambda (phoneme)
                                      (eq (phoneme-type phoneme) 'vowel))
@@ -455,37 +457,64 @@ vowel phoneme matches exactly."
        (spaces-added (seqjoin 'list representations " ")))
     (apply 'concatenate 'string `(".* " ,@spaces-added))))
 
-(defun generate-regex/alliteration (phonemes)
+(defun generate-regex/rhyme (phonemes &rest ignored &key loose)
+  "Matches all words where every phoneme after the first vowel phoneme
+matches exactly.
+When LOOSE is non-nil, additional consonants may be interspersed."
+  (declare (ignorable ignored))
+  (let*
+      ((first-vowel-pos    (position-if (lambda (phoneme)
+                                          (eq (phoneme-type phoneme) 'vowel))
+                                        phonemes))
+       (first-vowel-to-end (subseq phonemes first-vowel-pos))
+       (representations    (mapcar 'phoneme-representation first-vowel-to-end))
+       (join-str           (if loose " #* " " ")))
+    (apply #'concatenate
+           'string
+           `(".* "
+             ,@(seqjoin 'list representations join-str)
+             ,join-str))))
+
+(defun generate-regex/alliteration (phonemes &rest ignored)
   "A regex which matches all words which begin with the same phoneme; this is
 going to match many, many words for virtually any input."
+  (declare (ignorable ignored))
   (concatenate 'string (phoneme-representation (first phonemes)) " .* "))
 
-(defun generate-regex/assonance (phonemes)
-  "Matches all words which contain the same vowels, with any consonants intermixed."
-  (apply #'concatenate 'string
-               `("#*"
-                 ,@(seqjoin 'list (mapcar #'phoneme-representation (remove-if-not #'vowel-p phonemes)) "#*")
-                 "#*")))
+(defun generate-regex/assonance (phonemes &rest ignored &key loose)
+  "Matches all words which contain the same vowels, with any consonants intermixed.
+When LOOSE is non-nil, additional vowels may occur before or after the sequence."
+  (declare (ignorable ignored))
+  (let
+      ((pad-str (if loose ".*" "#*")))
+    (apply #'concatenate 'string
+           `(,pad-str
+             ,@(seqjoin 'list (mapcar #'phoneme-representation (remove-if-not #'vowel-p phonemes)) "#*")
+             ,pad-str))))
 
-(defun generate-regex/consonance (phonemes)
-  "Matches all words which contain all the same consonant phonemes, with any vowels intermixed."
-  (apply #'concatenate 'string
-               `("@*"
-                 ,@(seqjoin 'list (mapcar #'phoneme-representation (remove-if-not #'consonant-p phonemes)) "@*")
-                 "@*")))
+(defun generate-regex/consonance (phonemes &rest ignored &key loose)
+  "Generate a regex which will find repetitions of consonants in this phoneme sequence.
+When LOOSE is non-nil, additional consonants are allowed."
+  (declare (ignorable ignored))
+  (let
+      ((join-str (if loose ".*" "@*")))
+    (apply #'concatenate 'string
+           `("@*"
+             ,@(seqjoin 'list (mapcar #'phoneme-representation (remove-if-not #'consonant-p phonemes)) join-str)
+             "@*"))))
 
-(defun generate-regex (metapattern pronunciation)
+(defun generate-regex (metapattern pronunciation &rest generator-options)
   "Return an unencoded phonetic regex which implements METAPATTERN over
 PRONUNCIATION."
   (let*
       ((phonemes-stresses (phoneme-stress-alist pronunciation))
-       (phonemes          (mapcar #'car phonemes-stresses)))
-    (case metapattern
-      (perfect-rhyme (generate-regex/perfect-rhyme phonemes))
-      (near-rhyme    (generate-regex/near-rhyme phonemes))
-      (assonance     (generate-regex/assonance phonemes))
-      (consonance    (generate-regex/consonance phonemes))
-      (alliteration  (generate-regex/alliteration phonemes)))))
+       (phonemes          (mapcar #'car phonemes-stresses))
+       (generator-func    (case metapattern
+                            (rhyme         #'generate-regex/rhyme)
+                            (assonance     #'generate-regex/assonance)
+                            (consonance    #'generate-regex/consonance)
+                            (alliteration  #'generate-regex/alliteration))))
+    (apply generator-func phonemes generator-options)))
 
 ;; Dictionary Processing
 
@@ -575,12 +604,13 @@ things and save it."
                  (words dict)))
     results))
 
-(defmethod find-metapattern ((dict simple-phonetic-dictionary) metapattern word)
+(defmethod find-metapattern ((dict simple-phonetic-dictionary) metapattern word &rest generator-options)
   "Find words in DICT which satisfy an internally generated regular
-expression implementing the provided METAPATTERN over WORD."
+expression implementing the provided METAPATTERN over WORD. Any
+additional arguments are forwarded to `GENERATE-REGEX'."
   (let*
       ((first-pronunciation (first (pronounce-word dict word)))
-       (regex (generate-regex metapattern first-pronunciation)))
+       (regex (apply #'generate-regex metapattern first-pronunciation generator-options)))
     (regex-search dict regex)))
 
 (defmethod test-metapattern ((dict simple-phonetic-dictionary) metapattern word-a word-b)

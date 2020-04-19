@@ -168,15 +168,25 @@ Diphthongs and the r-colored phoneme, for now, are excluded whenever any restric
 
 ** 🚧 Phonetic Metapatterns via Regular Expression Generators
 
-Given a word and a meta-pattern, cl-phonetic can produce a phonetic regex implementing that pattern over the word. This includes things like rhyme, perfect rhyme, assonance, consonance, alliteration, etc.
+cl-phonetic can function as a rhyming dictionary by way of phonetic metapatterns. Other literary devices, like assonance, consonance, and alliteration, can also be queried.
 
-Examples of Sylvia's current behavior:
-| Metapattern      | Input Word | Input Pronunciation | Output Regex     | Example Matching Words                      |
-|------------------+------------+---------------------+------------------+---------------------------------------------|
-| ='perfect-rhyme= | Clap       | =C L AE P=          | =.* AE P=        | Rap, Milsap, Trap, Nap                      |
-| ='near-rhyme=    | Clap       | =C L AE P=          | =.* AE #* P #*=  | Rap, Raps, Clasp, Milsap, Synapse, Trapped  |
-| ='vowel-match=   | Clap       | =C L AE P=          | =.* AE .*=       | Rad, Bad, Saturday, Clapper, Clap           |
-| ='vowel-match=   | Clapper    | =C L AE P ER=       | =.* AE #* ER .*= | Dapper, Transfer, Unilateral, Staffordshire |
+A phonetic metapattern is a function which transforms a pronunciation (the phoneme sequence associated with a word) into a regular expression. This resulting regular expression implements the given metapattern over the given word.
+
+*rhyme*
+
+The ='rhyme= metapattern applied to a word =word= produces a regular expression which matches words that rhyme with =word=. A rhyming word is defined here as any phoneme sequence whose phonemes match exactly after the first vowel phoneme. With the =:loose= option, additional consonant phonemes may be interspersed.
+
+*consonance*
+
+The ='consonance= metapattern produces a regular expression which matches all words containing the same sequence of consonant phonemes as the target word. Vowel phonemes are ignored. With the =:loose= option, additional consonants may be interspersed.
+
+*assonance*
+
+The ='assonance= metapattern produces a regular expression which matches all words containing the same sequence of vowel phonemes as the target word. Consonant phonemes are ignored. With the =:loose= option, additional vowels may occur before or after the matched sequence.
+
+*alliteration*
+
+The ='alliteration= metapattern produces a regular expression which matches all words which begin with the same phoneme as the target word.
 
 One goal of cl-phonetic is to redefine "rhyme" and "near rhyme" to make better use of the properties of phonemes, potentially yielding more sensible results. For example, we could allow only unvoiced plosives between phonemes in =:near-rhyme=, rather than any consonant.
 
@@ -390,7 +400,7 @@ The previous expression, restricted to vowels with a height between open and mid
 =generate-regex= creates a phonetic regular expression from a predefined metapattern and a word.
 
 #+begin_src lisp :exports both :results raw drawer
-(generate-regex 'perfect-rhyme (first (pronounce-word *dict* "Candor")))
+(generate-regex 'rhyme (first (pronounce-word *dict* "Candor")))
 #+end_src
 
 #+RESULTS:
@@ -402,7 +412,7 @@ Searching for this regex yields words that perfectly rhyme with "Candor".
 
 #+begin_src lisp :exports both :results raw drawer
      (the-words (regex-search *dict*
-                              (generate-regex 'perfect-rhyme
+                              (generate-regex 'rhyme
                                               (first (pronounce-word *dict* "Candor")))))
 #+end_src
 
@@ -426,7 +436,7 @@ But, if all you're going to do is search for the generated regex, just use =find
 =find-metapattern= wraps the process of generating a regular expression & searching it:
 
 #+begin_src lisp :exports both :results raw drawer
-(the-words (find-metapattern *dict* 'near-rhyme "Turkey"))
+(the-words (find-metapattern *dict* 'rhyme "Turkey" :loose t))
 #+end_src
 
 #+RESULTS:
@@ -458,7 +468,7 @@ Here, it does;
 And here, it does not;
 
 #+begin_src lisp :exports both :results raw drawer
-(test-metapattern *dict* 'perfect-rhyme "Wallet" "Stanford")
+(test-metapattern *dict* 'rhyme "Wallet" "Stanford")
 #+end_src
 
 #+RESULTS:
