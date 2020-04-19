@@ -89,9 +89,11 @@ This library is in-progress, and each feature is at varying degrees of readiness
 | 🚧           | Currently under active implementation.                                                            |
 | ✅           | Done                                                                                              |
 
-** 🚧 Phonetic Pattern Matching via Regular Expressions
+** ✅ Phonetic Pattern Matching via Regular Expressions
 
 cl-phonetic can search a phonetic dictionary for words whose pronunciations match a phonetic regular expression. These regex are similar to Perl in syntax, but, have nothing to do with ASCII or Unicode character sets. Instead, the alphabet of the language tested by these regex consists only of phonemes.
+
+*Phoneme Literals*
 
 In a phonetic regex, phoneme literals are defined according to the ARPABET, as it was used by [[http://www.speech.cs.cmu.edu/cgi-bin/cmudict][cmudict]]. A full list of ARPABET phoneme encodings from that link is reproduced here.
 
@@ -141,6 +143,8 @@ When they occur in a phonetic regex, these phoneme literals should be space deli
 
 Since these regex are Perl-like, =K AE .*= is also a valid phonetic regex, and matches words like "cat", "Canberra", "cathode", etc.
 
+*Phoneme Class Expressions*
+
 =cl-phonetic= further extends Perl syntax by introducing a new facility for defining classes and sequences of phonemes. To start;
 - =#= matches any single consonant phoneme
 - =@= matches any single vowel phoneme
@@ -149,6 +153,8 @@ Since these regex are Perl-like, =K AE .*= is also a valid phonetic regex, and m
 Both the =#= and =@= class symbols may optionally accept arguments which further constrain matches. These arguments consist of comma delimited characters within angle brackets. For example, =#<v,,f>= which matches only voiced, fricative consonants.
 
 You need only supply as many arguments as desired, and can leave fields empty as needed. For example, the following class definitions are all valid, and all compile to the same phoneme sets; =@=, =@<>=, =@<,>=, and =@<,,>=.
+
+*Consonant Class Options*
 
 For consonant classes (the =#<,,>= pattern), up to three arguments can be specified;
 - First, a single character which can restrict matches based on voicing.
@@ -198,6 +204,8 @@ Examples:
 | =#<,,fa>=                | All consonants which are either fricative or affricate                                                        |
 | =#<u,bd,fa>=             | All consonants which are unvoiced, and also either bilabial or dental, and also either fricative or affricate |
 
+*Vowel Class Options*
+
 For vowel classes (the =@<,,>= pattern), three parameters may also be specified;
 - First, height
 - Second, backness
@@ -240,7 +248,7 @@ Examples:
 
 Diphthongs and the r-colored phoneme, for now, are excluded whenever any restrictions are applied. They will only match a plain =@=, or, their associated phoneme literals.
 
-** 🚧 Phonetic Metapatterns via Regular Expression Generators
+** ✅ Phonetic Metapatterns via Regular Expression Generators
 
 cl-phonetic can function as a rhyming dictionary by way of phonetic metapatterns. Other literary devices, like assonance, consonance, and alliteration, can also be queried.
 
@@ -262,17 +270,13 @@ The ='assonance= metapattern produces a regular expression which matches all wor
 
 The ='alliteration= metapattern produces a regular expression which matches all words which begin with the same phoneme as the target word.
 
-One goal of cl-phonetic is to redefine "rhyme" and "near rhyme" to make better use of the properties of phonemes, potentially yielding more sensible results. For example, we could allow only unvoiced plosives between phonemes in =:near-rhyme=, rather than any consonant.
-
-This is still in progress.
-
 ** ⛏ Pronunciation Inferencing
 
-Character sequence to phoneme sequence mapping.
+Arbitrary character sequence to phoneme sequence mapping. Sylvia has a quirky ruleset for this, which works fairly well. But it might be more fun to fit a transducer instead.
 
-This is still in progress.
+** ⛏ Popularity Filtering & Sorting
 
-May port general algorithm from the Sylvia Python package. May try something else.
+Allow searches to be applied in order of word popularity, and limit by either popularity threshold or total match count. Helps to prevent obscure words cluttering results.
 
 ** 💡 Corpus Statistics
 
