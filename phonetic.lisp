@@ -234,19 +234,20 @@ phoneme literals are not separated by whitespace."
         :test 'equal
         :key #'phoneme-representation))
 
-(defun query-phonemes (type &key q-voiced q-poa q-moa q-height q-backness q-roundedness)
+(defun query-phonemes (type &key voiced place-of-articulation manner-of-articulation height backness roundedness)
   "Filter the global `*phonemes*' list and return the result.
 
 Parameter TYPE should be either 'VOWEL or 'CONSONANT.
 
-Parameters Q-VOICED, Q-POA, and Q-MOA are only applicable when TYPE is
-'CONSONANT, while Q-HEIGHT, Q-BACKNESS, and Q-ROUNDEDNESS are
-applicable only when TYPE is 'VOWEL. All of these parameters may be
-omitted or nil, in which case they will not be used for filtering. If
-they are supplied with list values, then filtering will preserve only
-phonemes whose relevant properties are in the supplied lists. For any
-other parameter value, filtering will preserve only phonemes whose
-relevant properties are `EQUAL' to the supplied value.
+Parameters VOICED, PLACE-OF-ARTICULATION, and MANNER-OF-ARTICULATION
+are only applicable when TYPE is 'CONSONANT, while HEIGHT,
+BACKNESS, and ROUNDEDNESS are applicable only when TYPE is
+'VOWEL. All of these parameters may be omitted or nil, in which case
+they will not be used for filtering. If they are supplied with list
+values, then filtering will preserve only phonemes whose relevant
+properties are in the supplied lists. For any other parameter value,
+filtering will preserve only phonemes whose relevant properties are
+`EQUAL' to the supplied value.
 
 Return a list of all phonemes matching query. Each parameter can be
 either a single value to match, or a list thereof. Unprovided
@@ -264,14 +265,14 @@ parameters are considered wildcards."
           (equal type (phoneme-type phoneme))
           (or (vowel-p phoneme)
               (and
-               (phoneme-prop-fits-query-props q-voiced (voiced-p phoneme))
-               (phoneme-prop-fits-query-props q-moa (manner-of-articulation phoneme))
-               (phoneme-prop-fits-query-props q-poa (place-of-articulation phoneme))))
+               (phoneme-prop-fits-query-props voiced (voiced-p phoneme))
+               (phoneme-prop-fits-query-props manner-of-articulation (manner-of-articulation phoneme))
+               (phoneme-prop-fits-query-props place-of-articulation (place-of-articulation phoneme))))
           (or (consonant-p phoneme)
               (and
-               (phoneme-prop-fits-query-props q-height (height phoneme))
-               (phoneme-prop-fits-query-props q-backness (backness phoneme))
-               (phoneme-prop-fits-query-props q-roundedness (roundedness phoneme)))))))
+               (phoneme-prop-fits-query-props height (height phoneme))
+               (phoneme-prop-fits-query-props backness (backness phoneme))
+               (phoneme-prop-fits-query-props roundedness (roundedness phoneme)))))))
 
     (remove-if-not #'matching-phoneme-p *phonemes*)))
 
