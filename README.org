@@ -33,6 +33,9 @@ This library is intended to replace the [[https://github.com/bgutter/sylvia][Syl
   (generate-regex 'rhyme (first (pronounce-word dict "roses")) :loose t)
   ;; ".* OW #* Z #* IH #* Z #* "
 
+  (generate-regex 'rhyme (first (pronounce-word dict "roses")) :near t)
+  ;; ".* OW Z [  AE EH IH IY  ] Z "
+
   (the-words (find-metapattern dict 'rhyme "roses"))
   ;; Words that perfectly rhyme with "roses"
   ;; ("supposes" "roses" "rose's" "proposes" "primroses" "presupposes" "poses"
@@ -46,6 +49,13 @@ This library is intended to replace the [[https://github.com/bgutter/sylvia][Syl
   ;;  "poses" "overexposes" "opposes" "noses" "juxtaposes" "joneses" "jones's"
   ;;  "imposes" "hoses" "holmes's" "forecloses" "exposes" "dozes" "doles's"
   ;;  "disposes" "discloses" "decomposes" "composes" "closings" "closes" "bulldozes")
+
+  (the-words (find-metapattern dict 'rhyme "roses" :loose t :near t))
+  ;; ("supposes" "rosie's" "roses" "rosecrans" "roseanne's" "rose's" "rolls's"
+  ;;  "proposes" "primroses" "presupposes" "poses" "overexposes" "opposes" "noses"
+  ;;  "juxtaposes" "joneses" "jones's" "imposes" "hoses" "holmes's" "grozny's"
+  ;;  "forecloses" "exposes" "dozes" "doles's" "disposes" "discloses" "decomposes"
+  ;;  "composes" "closings" "closes" "bulldozes" "bozell's")
 
   (the-words (find-metapattern dict 'consonance "babble"))
   ;; Words with consonance against "babble"

@@ -405,22 +405,35 @@ encoded string representation for fast matching."
 
 ;; Regex Generation
 
-(defun generate-regex/rhyme (phonemes &rest ignored &key loose)
+(defun generate-regex/rhyme (phonemes &rest ignored &key loose near)
   "Matches all words where every phoneme after the first vowel phoneme
 matches exactly.
-When LOOSE is non-nil, additional consonants may be interspersed."
+When LOOSE is non-nil, additional consonants may be interspersed.
+When NEAR is non-nil, vowel phonemes may match similar vowels."
   (declare (ignorable ignored))
   (let*
       ((first-vowel-pos    (position-if (lambda (phoneme)
                                           (eq (phoneme-type phoneme) 'vowel))
                                         phonemes))
        (first-vowel-to-end (subseq phonemes first-vowel-pos))
-       (representations    (mapcar 'phoneme-representation first-vowel-to-end))
        (join-str           (if loose " #* " " ")))
     (apply #'concatenate
            'string
            `(".* "
-             ,@(seqjoin 'list representations join-str)
+             ,@(seqjoin 'list
+                         (mapcar (lambda (phoneme)
+                                  (if (and near (vowel-p phoneme) (backness phoneme))
+                                      (apply #'concatenate 'string
+                                       (seqjoin 'list
+                                               `(
+                                                 "[ "
+                                                 ,@(mapcar #'phoneme-representation
+                                                           (query-phonemes 'vowel :backness (backness phoneme)))
+                                                 " ]")
+                                               " "))
+                                      (phoneme-representation phoneme)))
+                                first-vowel-to-end)
+                        join-str)
              ,join-str))))
 
 (defun generate-regex/alliteration (phonemes &rest ignored)
