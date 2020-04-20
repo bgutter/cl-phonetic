@@ -4,8 +4,6 @@
 ;; Search for phoneme patterns using regular expressions.
 ;;
 
-;; Libraries
-
 (in-package :cl-phonetic)
 
 ;; Phonemes & Encoding
@@ -607,5 +605,5 @@ you just want the words themselves."
 
 (defun the-pronunciations (dict-entries)
   "Many cl-phonetic APIs return an alist mapping words to pronunciations. Call this if
-you just want the words themselves."
+you just want the pronunciations themselves."
   (mapcar 'cdr dict-entries))
