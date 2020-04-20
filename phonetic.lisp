@@ -6,11 +6,7 @@
 
 ;; Libraries
 
-(ql:quickload 'cl-ppcre)
-(ql:quickload 'cl-utilities)
-(ql:quickload 'cl-arrows)
-
-(use-package 'cl-arrows)
+(in-package :cl-phonetic)
 
 ;; Phonemes & Encoding
 

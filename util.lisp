@@ -4,6 +4,8 @@
 ;; Various utilities
 ;;
 
+(in-package :cl-phonetic)
+
 (defmacro string-extract (str re names-list &rest body)
   "Basically, `multiple-value-bind', but for CL-PPCRE capture groups.
 Scan STR with RE, binding NAMES-LIST to the resulting matches, and
