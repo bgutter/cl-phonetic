@@ -221,7 +221,7 @@ Note that behavior is undefined (and frankly broken) if consecutive
 phoneme literals are not separated by whitespace."
   (reduce (lambda (str phoneme)
             (ppcre:regex-replace-all
-             (concatenate 'string (phoneme-representation phoneme) "(?=([^a-zA-Z]|$))") ; Prevent ambiguity by checking boundaries
+             (glue-strings (phoneme-representation phoneme) "(?=([^a-zA-Z]|$))") ; Prevent ambiguity by checking boundaries
              str
              (string (encoded-char phoneme))))
           (sort *phonemes* #'> :key (lambda (entry) (length (phoneme-representation entry)))) ;; TODO HACK! Prevent misparsing
@@ -292,10 +292,9 @@ symbols (like 'voiced, 'plosive, 'open-mid, etc)."
   "Return a string which contains a CL-PPCRE square-bracket
 expression, whose contained characters are the encoded-character
 representations of the phonemes in PHONEME-LIST."
-  (let*
-      ((phoneme-encoded-strs (mapcar (cl-utilities:compose #'string #'encoded-char) phoneme-list))
-       (encoded-chars-string (apply #'concatenate `(string ,@phoneme-encoded-strs))))
-    (concatenate 'string "[" encoded-chars-string "]")))
+  (let
+      ((phoneme-encoded-strs (mapcar (cl-utilities:compose #'string #'encoded-char) phoneme-list)))
+    (glue-strings "[" phoneme-encoded-strs "]")))
 
 (defun expand-phoneme-expression/vowels (&optional height-chars backness-chars roundedness-chars)
   "Given the char arguments to a \"@<,,>\" expression, return an
@@ -336,10 +335,9 @@ plain Jane CL-PPCRE square-bracket expressions."
          (multiple-value-bind (start stop)
              (ppcre:scan expstr-scanner pres)
            (if start
-               (setf pres (concatenate 'string
-                                       (subseq pres 0 start)
-                                       (expand-phoneme-expression (subseq pres start stop))
-                                       (subseq pres stop))))))
+               (setf pres (glue-strings (subseq pres 0 start)
+                                        (expand-phoneme-expression (subseq pres start stop))
+                                        (subseq pres stop))))))
     pres))
 
 (defun encode-regex/phoneme-literals (pres)
@@ -348,13 +346,12 @@ plain Jane CL-PPCRE square-bracket expressions."
 
 (defun encode-regex (pres)
   "Return a fully-encoded version of the given string."
-  (concatenate 'string
-               "^"
-               (-<> pres
-                    (encode-regex/phoneme-literals)
-                    (encode-regex/phoneme-expressions)
-                    (remove #\  <>))
-               "$"))
+  (glue-strings "^"
+                (-<> pres
+                     (encode-regex/phoneme-literals)
+                     (encode-regex/phoneme-expressions)
+                     (remove #\  <>))
+                "$"))
 
 ;; Pronunciations
 
@@ -371,11 +368,9 @@ plain Jane CL-PPCRE square-bracket expressions."
   "When a `PRONUNCIATION' object is printed, print the textual
 representation of each of its phonemes."
   (print-unreadable-object (pr out :type t)
-    (format out "~A" (apply #'concatenate 'string
-                            (seqjoin 'list
-                                     (mapcar (cl-utilities:compose #'phoneme-representation #'car)
-                                             (phoneme-stress-alist pr))
-                                     " ")))))
+    (format out "~A" (join-strings " "
+                                   (mapcar (cl-utilities:compose #'phoneme-representation #'car)
+                                             (phoneme-stress-alist pr))))))
 
 (defmethod initialize-instance :after ((pr pronunciation) &rest ignored)
   "After each `PRONUNCIATION' is created, automatically compile its
@@ -417,53 +412,48 @@ When NEAR is non-nil, vowel phonemes may match similar vowels."
                                           (eq (phoneme-type phoneme) 'vowel))
                                         phonemes))
        (first-vowel-to-end (subseq phonemes first-vowel-pos))
-       (join-str           (if loose " #* " " ")))
-    (apply #'concatenate
-           'string
-           `(".* "
-             ,@(seqjoin 'list
-                         (mapcar (lambda (phoneme)
-                                  (if (and near (vowel-p phoneme) (backness phoneme))
-                                      (apply #'concatenate 'string
-                                       (seqjoin 'list
-                                               `(
-                                                 "[ "
-                                                 ,@(mapcar #'phoneme-representation
-                                                           (query-phonemes 'vowel :backness (backness phoneme)))
-                                                 " ]")
-                                               " "))
-                                      (phoneme-representation phoneme)))
-                                first-vowel-to-end)
-                        join-str)
-             ,join-str))))
+       (pad-str           (if loose " #* " " ")))
+    (glue-strings
+     ".* "
+     (join-strings pad-str
+                   (mapcar (lambda (phoneme)
+                             (if (and near (vowel-p phoneme) (backness phoneme))
+                                 (join-strings " "
+                                               "["
+                                               (mapcar #'phoneme-representation
+                                                       (query-phonemes 'vowel :backness (backness phoneme)))
+                                               "]")
+                                 (phoneme-representation phoneme)))
+                           first-vowel-to-end)
+                   pad-str))))
 
 (defun generate-regex/alliteration (phonemes &rest ignored)
   "A regex which matches all words which begin with the same phoneme; this is
 going to match many, many words for virtually any input."
   (declare (ignorable ignored))
-  (concatenate 'string (phoneme-representation (first phonemes)) " .* "))
+  (glue-strings (phoneme-representation (first phonemes)) " .* "))
 
 (defun generate-regex/assonance (phonemes &rest ignored &key loose)
   "Matches all words which contain the same vowels, with any consonants intermixed.
 When LOOSE is non-nil, additional vowels may occur before or after the sequence."
   (declare (ignorable ignored))
   (let
-      ((pad-str (if loose ".*" "#*")))
-    (apply #'concatenate 'string
-           `(,pad-str
-             ,@(seqjoin 'list (mapcar #'phoneme-representation (remove-if-not #'vowel-p phonemes)) "#*")
-             ,pad-str))))
+      ((pad-str (if loose " .* " " #* ")))
+    (glue-strings pad-str
+                  (join-strings " #* " (mapcar #'phoneme-representation (remove-if-not #'vowel-p phonemes)))
+                  pad-str)))
 
 (defun generate-regex/consonance (phonemes &rest ignored &key loose)
   "Generate a regex which will find repetitions of consonants in this phoneme sequence.
 When LOOSE is non-nil, additional consonants are allowed."
   (declare (ignorable ignored))
   (let
-      ((join-str (if loose ".*" "@*")))
-    (apply #'concatenate 'string
-           `("@*"
-             ,@(seqjoin 'list (mapcar #'phoneme-representation (remove-if-not #'consonant-p phonemes)) join-str)
-             "@*"))))
+      ((pad-str (if loose " .* " " @* ")))
+    (glue-strings " @* "
+                  (join-strings pad-str (mapcar #'phoneme-representation
+                                                (remove-if-not #'consonant-p
+                                                               phonemes)))
+                  " @* ")))
 
 (defun generate-regex (metapattern pronunciation &rest generator-options)
   "Return an unencoded phonetic regex which implements METAPATTERN over

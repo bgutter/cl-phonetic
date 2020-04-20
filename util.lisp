@@ -37,3 +37,12 @@ names in NAMES-LIST."
              sequence
              (make-list (- (length sequence) 1) :initial-element delimiter)
              #'merge-closure))))
+
+(defun glue-strings (&rest strings-or-lists)
+  "Combine a bunch of strings, or lists of strings, into one final string.
+TODO: This is wildly inefficient. Should be doable with a single CONCATENATE."
+  (apply #'concatenate 'string (flatten strings-or-lists)))
+
+(defun join-strings (delimiter &rest strings-or-lists)
+  "seq-join for strings"
+  (glue-strings (seqjoin 'list (flatten strings-or-lists) delimiter)))
