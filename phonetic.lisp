@@ -476,12 +476,17 @@ PRONUNCIATION."
 (defgeneric pronounce-word (dict word)
   (:documentation "Find all pronunciations for the given word in this dictionary."))
 
-(defun normalize-word (dirty-word)
+(defun normalize-word (word)
+  "Downcase & keep only apostrophes."
+  (-<> word
+      (string-downcase)
+      (ppcre:regex-replace-all "[^a-z']" <> "")))
+
+(defun decode-cmudict-word (word-val-pair)
   "Maps something like \"FooBaR(1)\" to (values \"foobar\" 1)"
-  (setf dirty-word (string-downcase dirty-word))
-  (string-extract dirty-word "([^\\s\\(\\)]+)(?:\\((\\d+)\\))?" (word index)
+  (string-extract word-val-pair "([^\\s\\(\\)]+)(?:\\((\\d+)\\))?" (word index)
                   (values
-                   word
+                   (normalize-word word)
                    (and index (parse-integer index)))))
 
 (defun normalize-phoneme (dirty-phoneme)
@@ -491,7 +496,7 @@ PRONUNCIATION."
 (defun learn-word (dict word phonemes)
   "Given a phonetic dictionary, word and a list of phonemes, sanitizes
 things and save it."
-  (let* ((clean-word     (normalize-word word))
+  (let* ((clean-word     (decode-cmudict-word word))
          (entry          (gethash clean-word (words dict)))
          (clean-phonemes (mapcar #'normalize-phoneme phonemes))
          (pronunciation  (make-pronunciation clean-phonemes)))
@@ -501,10 +506,7 @@ things and save it."
 
 (defun tokenize-utterance (utterance)
   "Split English text into sequence of normalized words."
-  (mapcar (lambda (wordlike)
-            (-<> wordlike
-                (ppcre:regex-replace-all "[^0-9a-zA-Z']" <> "")
-                (normalize-word)))
+  (mapcar #'normalize-word
           (ppcre:split "\\s+" utterance)))
 
 (defun pronounce-utterance (dict utterance)
