@@ -358,6 +358,14 @@ plain Jane CL-PPCRE square-bracket expressions."
    stresses. Includes a slot to cache a string which is a sequence of
    the character encodings of each phoneme in the pronunciation."))
 
+(defun pronunciation-phonemes (pronunciation)
+  "Get a list of phonemes from this pronunciation."
+  (mapcar #'car (phoneme-stress-alist pronunciation)))
+
+(defun pronunciation-syllable-count (pronunciation)
+  "The number of syllables in pronunciation object PRONUNCIATION."
+  (count-if #'vowel-p (pronunciation-phonemes pronunciation)))
+
 (defmethod print-object ((pr pronunciation) out)
   "When a `PRONUNCIATION' object is printed, print the textual
 representation of each of its phonemes."
@@ -606,9 +614,14 @@ any/any (cross-product) sort of thing."
 (defun the-words (dict-entries)
   "Many cl-phonetic APIs return an alist mapping words to pronunciations. Call this if
 you just want the words themselves."
-  (mapcar 'car dict-entries))
+  (mapcar #'car dict-entries))
 
 (defun the-pronunciations (dict-entries)
   "Many cl-phonetic APIs return an alist mapping words to pronunciations. Call this if
 you just want the pronunciations themselves."
-  (mapcar 'cdr dict-entries))
+  (mapcar #'cdr dict-entries))
+
+(defun the-phonemes (dict-entries)
+  "Many cl-phonetic APIs return an alist mapping words to pronunciations. Call this if
+you just want the phonemes from the pronunciations themselves."
+  (mapcar #'car (the-pronunciations dict-entries)))
