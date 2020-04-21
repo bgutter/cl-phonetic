@@ -500,7 +500,10 @@ things and save it."
          (entry          (gethash clean-word (words dict)))
          (clean-phonemes (mapcar #'normalize-phoneme phonemes))
          (pronunciation  (make-pronunciation clean-phonemes)))
-    (setf (gethash clean-word (words dict)) (cons pronunciation entry))))
+    (setf (gethash clean-word (words dict))
+          (if (null entry)
+              (list pronunciation)
+              (flatten (list entry pronunciation)))))) ;; TODO INEFFICIENT!!
 
 ;; utterance handling
 
