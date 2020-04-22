@@ -4,10 +4,10 @@
 ;; Package unit tests.
 ;;
 
+(in-package :cl-phonetic)
+
 (ql:quickload 'lisp-unit)
 (use-package 'lisp-unit)
-
-(in-package :cl-phonetic)
 
 (define-test normalize-word
   (assert-equal "saturday" (normalize-word "SatURday!!!!!"))

@@ -48,3 +48,16 @@ string."
 (defun join-strings (delimiter &rest strings-or-lists)
   "GLUE-STRINGS, but with a delimiter between joins."
   (glue-strings (seqjoin 'list (flatten strings-or-lists) delimiter)))
+
+(defun nth-position-if (n predicate sequence)
+  "Get the position of the nth item to meet predicate, or nil."
+  (let
+      ((counter 0))
+    (loop for item in sequence
+          and position from 0 do
+      (progn
+        (if (funcall predicate item)
+          (incf counter))
+        (when (> counter n)
+          (return-from nth-position-if position))))
+    nil))

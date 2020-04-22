@@ -9,7 +9,8 @@
   :serial t
   :components ((:file "defpackage")
                (:file "util")
-               (:file "phonetic"))
+               (:file "phonetic")
+               (:file "muse"))
   :depends-on (#:cl-ppcre
                #:cl-utilities
                #:cl-arrows
